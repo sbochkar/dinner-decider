@@ -147,6 +147,7 @@ export const STATIC_PAGES = [
   <h2>Advertising</h2>
   <p>We may show ads on this site through Google AdSense. Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this and other websites. Google's use of advertising cookies enables it and its partners to serve ads to you based on your visit to this site and/or other sites on the Internet.</p>
   <p>You can opt out of personalised advertising by visiting <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google Ads Settings</a>. You can also opt out of some third-party vendors' use of cookies for personalised advertising at <a href="https://www.aboutads.info" target="_blank" rel="noopener">www.aboutads.info</a>. To learn more about how Google handles data, see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">How Google uses information from sites or apps that use our services</a>.</p>
+  <p>If you visit from the European Economic Area, the United Kingdom or Switzerland, Google's consent tool asks for your choice before any advertising cookies are used. You can consent, decline, or pick specific purposes under "Manage options". To change your choice later, use the "Privacy and cookie settings" link shown on the page.</p>
 
   <h2>Your rights</h2>
   <p>Under Canadian privacy law (PIPEDA), you can ask what personal information we hold about you, ask us to correct it, or ask us to delete it. We hold very little, but you are welcome to ask. Email ${mail} and we will respond within 30 days.</p>
