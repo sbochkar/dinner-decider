@@ -12,7 +12,7 @@ import {
 // GET /api/places?ids=n123,w456                   specific places (shared shortlists)
 export async function onRequestGet(context) {
   const { request } = context;
-  const ctx = { waitUntil: context.waitUntil.bind(context) };
+  const ctx = { waitUntil: context.waitUntil };
   const url = new URL(request.url);
 
   const idsParam = url.searchParams.get('ids');

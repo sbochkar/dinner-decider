@@ -16,7 +16,7 @@ function shortLabel(item) {
 // GET /api/geocode?lat=..&lng=..      -> reverse lookup (friendly label for GPS)
 export async function onRequestGet(context) {
   const { request } = context;
-  const ctx = { waitUntil: context.waitUntil.bind(context) };
+  const ctx = { waitUntil: context.waitUntil };
   const url = new URL(request.url);
   const q = (url.searchParams.get('q') || '').trim();
 

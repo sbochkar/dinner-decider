@@ -14,7 +14,7 @@ Can't decide where to eat? DinnerDecider helps a person or a couple settle on di
 ## Architecture
 
 - `public/`: static front end built from plain ES modules (no bundler). `public/index.html` loads `public/js/app.js` as a module, and styles live in `public/css/styles.css`.
-- `functions/api/places.js` and `functions/api/geocode.js`: Cloudflare Pages Functions that proxy OpenStreetMap services (Overpass for places, Nominatim for geocoding). Responses are cached at the Cloudflare edge to limit upstream load.
+- `functions/api/places.js` and `functions/api/geocode.js`: API handlers (routed by `src/worker.js`) that proxy OpenStreetMap services (Overpass for places, Nominatim for geocoding). Responses are cached at the Cloudflare edge to limit upstream load.
 - No API keys are needed.
 - `test/`: unit tests for the shared logic, run with the Node test runner.
 
@@ -22,23 +22,20 @@ Can't decide where to eat? DinnerDecider helps a person or a couple settle on di
 
 ```sh
 npm install
-npm run dev     # serves public/ and functions/ locally via wrangler
+npm run dev     # serves the site and API locally via wrangler
 npm test        # runs the test suite
 ```
 
-## Deployment (Cloudflare Pages)
+## Deployment (Cloudflare Workers + static assets)
+
+Connect the GitHub repo in the Cloudflare dashboard (**Workers & Pages > Create > Import a repository**) and keep the defaults: build command *(none)*, deploy command `npx wrangler deploy`. Every push to `main` redeploys. Or deploy by hand:
 
 ```sh
 npx wrangler login
 npm run deploy
 ```
 
-Then, in the Cloudflare dashboard, go to **Workers & Pages > dinner-decider > Custom domains** and add your domain. If the domain already uses Cloudflare DNS, the records are configured automatically.
-
-Optional: connect the GitHub repository in **Workers & Pages > Create > Pages > Connect to Git** for automatic deploys on every push. Use these build settings:
-
-- Build command: *(none)*
-- Build output directory: `public`
+Then add your domain under **Workers & Pages > dinner-decider > Settings > Domains & Routes > Add > Custom domain**. If the domain uses Cloudflare DNS, records and certificate are created automatically.
 
 Before launching, replace the placeholder contact URL in the `User-Agent` headers in `functions/api/geocode.js` and `functions/_lib/osm.js`. The Nominatim usage policy requires a real contact URL or email in the User-Agent.
 
