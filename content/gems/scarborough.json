@@ -1,0 +1,82 @@
+{
+  "slug": "scarborough",
+  "city": "Scarborough",
+  "area": "Agincourt, Scarborough Town Centre & beyond",
+  "lat": 43.7731,
+  "lng": -79.2578,
+  "radiusKm": 7,
+  "updated": "2026-11",
+  "intro": "Scarborough is where a lot of Toronto actually eats: Hakka and Cantonese in Agincourt, Sri Lankan and South Indian along Lawrence and Markham Road, Caribbean all over. It's spread out and unglamorous, and that's the point — these are the places people drive across the city for.",
+  "picks": [
+    {
+      "name": "Federick Restaurant",
+      "neighbourhood": "Ellesmere Road",
+      "why": "A Scarborough Hakka institution — Indian-Chinese chilli chicken, Manchurian and hot garlic dishes that many locals swear by.",
+      "goodFor": [
+        "Spicy food",
+        "Takeout night"
+      ],
+      "osmId": "n13508105101"
+    },
+    {
+      "name": "Fishman Lobster Clubhouse Restaurant",
+      "neighbourhood": "Agincourt",
+      "why": "Famous for towering platters of lobster fried with ginger and scallion. Come with a group and plan to share.",
+      "goodFor": [
+        "Groups",
+        "Celebration"
+      ],
+      "osmId": "n6341716741"
+    },
+    {
+      "name": "Johnny's Hamburgers",
+      "neighbourhood": "Victoria Park & Sheppard",
+      "why": "Old-school burger stand that's been flipping charbroiled burgers for decades. No frills, very satisfying.",
+      "goodFor": [
+        "Cheap eats",
+        "Quick bite"
+      ],
+      "osmId": "n4558258842"
+    },
+    {
+      "name": "Babu Catering",
+      "neighbourhood": "Sheppard East",
+      "why": "Sri Lankan Tamil cooking — kothu roti, string hoppers and fiery curries — the kind of place Scarborough's Sri Lankan community has relied on for years.",
+      "goodFor": [
+        "Spicy food",
+        "Takeout night"
+      ],
+      "osmId": "n3325952062"
+    },
+    {
+      "name": "Saravanaa Bhavan",
+      "neighbourhood": "Scarborough",
+      "why": "South Indian vegetarian classics — giant dosas, idli and thalis — from a well-known Chennai-born chain.",
+      "goodFor": [
+        "Vegetarian",
+        "Family dinner"
+      ],
+      "osmId": "n4294689689"
+    },
+    {
+      "name": "Scotty Bons",
+      "neighbourhood": "Warden Avenue",
+      "why": "Jamaican and Caribbean comfort food — jerk chicken, oxtail and rice and peas in generous portions.",
+      "goodFor": [
+        "Comfort food",
+        "Takeout night"
+      ],
+      "osmId": "n3774328644"
+    },
+    {
+      "name": "Congee Queen",
+      "neighbourhood": "Agincourt",
+      "why": "Cantonese comfort food with a huge menu — congee, noodles, and plenty to share when nobody can agree.",
+      "goodFor": [
+        "Groups",
+        "Picky eaters"
+      ],
+      "osmId": "n5146445846"
+    }
+  ]
+}
