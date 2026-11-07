@@ -3,8 +3,8 @@
 
 export const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
-  'https://overpass.private.coffee/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
+  'https://z.overpass-api.de/api/interpreter',
+  'https://lz4.overpass-api.de/api/interpreter',
 ];
 
 export const MAX_RADIUS_M = 15000;
@@ -207,7 +207,7 @@ async function queryEndpoint(endpoint, query, fetchImpl) {
       'user-agent': 'DinnerDecider/1.0 (+https://github.com/)',
     },
     body: `data=${encodeURIComponent(query)}`,
-    signal: AbortSignal.timeout(28000),
+    signal: AbortSignal.timeout(50000),
   });
   if (!res.ok) throw new Error(`Overpass ${res.status}`);
   const json = await res.json(); // busy servers return an HTML error page -> throws
@@ -220,6 +220,6 @@ export async function runOverpass(query, fetchImpl = fetch) {
   try {
     return await Promise.any(OVERPASS_ENDPOINTS.slice(0, 2).map((e) => queryEndpoint(e, query, fetchImpl)));
   } catch {
-    return queryEndpoint(OVERPASS_ENDPOINTS[2], query, fetchImpl);
+    throw new Error('Overpass unavailable');
   }
 }

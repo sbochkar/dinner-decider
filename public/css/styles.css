@@ -69,7 +69,7 @@ button { cursor: pointer; }
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+.brand { flex-shrink: 0; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
 .brand-mark {
   width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; font-size: 20px;
   background: linear-gradient(140deg, var(--brand), #f59e0b); box-shadow: 0 4px 12px rgb(194 65 12 / .35);
@@ -80,7 +80,7 @@ main { flex: 1; width: 100%; max-width: 960px; margin: 0 auto; padding: 20px 16p
 .footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 24px 16px 32px; display: grid; gap: 6px; max-width: 640px; margin: 0 auto; }
 
 .pill {
-  display: inline-flex; align-items: center; gap: 6px; max-width: 60vw;
+  display: inline-flex; align-items: center; gap: 6px; max-width: 52vw; min-width: 0;
   background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
   padding: 8px 14px; font-weight: 600; font-size: .9rem; box-shadow: var(--shadow);
 }
@@ -279,3 +279,5 @@ dialog[open] { animation: pop .22s ease; }
 .delivery-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .delivery-links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .delivery-links .btn { padding: 8px 14px; font-size: .88rem; }
+
+@media (max-width: 420px) { .brand-name { display: none; } .pill { max-width: 70vw; } }
