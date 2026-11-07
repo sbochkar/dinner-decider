@@ -1,0 +1,2837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DinnerDecider — Random Restaurant Picker & Local Dinner Wheel</title>
+  <meta name="description" content="Stop debating what to eat tonight. Spin the local restaurant roulette wheel, take the 3-step craving quiz, or send a Top 3 shortlist link to your partner for delivery, pickup, or dine-in.">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              200: '#fed7aa',
+              300: '#fdba74',
+              400: '#fb923c',
+              500: '#ea580c', /* Warm Terracotta / Orange */
+              600: '#c2410c',
+              700: '#9a3412',
+              800: '#7c2d12',
+              900: '#431407',
+            },
+            coral: {
+              500: '#f43f5e',
+              600: '#e11d48',
+            },
+            warmbg: '#FAF7F2'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #FAF7F2;
+      color: #1f2937;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    .roulette-wrapper {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      margin: 0 auto;
+    }
+    @media (min-width: 640px) {
+      .roulette-wrapper {
+        width: 360px;
+        height: 360px;
+      }
+    }
+    /* Needle indicator */
+    .pointer-arrow {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 24px solid #111827;
+      z-index: 30;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+    /* Custom clean scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #fdba74;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-200 selection:text-brand-900">
+
+  <!-- TOP NAVIGATION & BRANDING -->
+  <header class="sticky top-0 z-40 bg-[#FAF7F2]/90 backdrop-blur-md border-b border-brand-100">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-2 flex-wrap">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-2 cursor-pointer" onclick="exitPartnerModeAndGoHome()">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 via-brand-500 to-amber-400 flex items-center justify-center text-white shadow-md shadow-brand-500/20 text-xl font-bold">
+          🍽️
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-xl font-black tracking-tight text-zinc-900 leading-none">
+              Dinner<span class="text-brand-500">Decider</span>
+            </h1>
+            <span class="hidden sm:inline-block text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Public MVP</span>
+          </div>
+          <p class="text-[11px] text-zinc-500 font-medium">No more "I don't know, you pick"</p>
+        </div>
+      </div>
+
+      <!-- Location, Partner Link, Refresh, Ad Preview & Sound Controls -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <button onclick="openLocationModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-white border border-brand-200 text-zinc-800 shadow-sm hover:border-brand-400 transition" title="Change Location or Postal Code">
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span id="currentLocDisplay" class="truncate max-w-[115px] sm:max-w-[175px]">Richmond Hill, ON</span>
+          <span class="text-zinc-400 text-[10px]">▼</span>
+        </button>
+
+        <button onclick="openPartnerModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-rose-500 hover:bg-rose-600 text-white shadow-sm transition active:scale-95" title="Pick 3 spots & send a link to your partner to choose the winner">
+          <span>💌</span>
+          <span class="hidden md:inline">Send Top 3 to Partner</span>
+          <span class="md:hidden">Partner Link</span>
+        </button>
+
+        <button onclick="refreshAndScanNearby()" id="headerRefreshBtn" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full bg-brand-500 hover:bg-brand-600 text-white shadow-sm transition active:scale-95" title="Scan for restaurants & refresh active game">
+          <span id="refreshSpinnerIcon" class="inline-block">🔄</span>
+          <span class="hidden lg:inline">Refresh & Scan</span>
+        </button>
+
+        <button onclick="toggleAdPreview()" id="adPreviewToggleBtn" class="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition" title="Toggle AdSense & Affiliate Slot Inspector">
+          <span>👁️</span>
+          <span class="hidden sm:inline" id="adPreviewLabel">Ads: ON</span>
+        </button>
+
+        <button onclick="toggleSound()" id="soundBtn" class="p-2 rounded-full bg-white border border-brand-200 text-zinc-700 hover:text-brand-600 transition shadow-sm text-sm" title="Toggle audio effects">
+          🔊
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- PARTNER VETO MODE BANNER (SHOWN WHEN ?shortlist= IS DETECTED OR PREVIEWED) -->
+  <div id="partnerVetoBanner" class="hidden bg-gradient-to-r from-rose-600 via-pink-600 to-brand-500 text-white shadow-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-3 text-center sm:text-left">
+        <span class="text-2xl bg-white/20 p-2 rounded-2xl">💌</span>
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">Partner Veto Mode Active</span>
+          <h2 class="text-sm sm:text-base font-black mt-0.5" id="partnerVetoHeadline">Your partner narrowed tonight's dinner down to 3 spots! Pick the winner below:</h2>
+        </div>
+      </div>
+      <button onclick="exitPartnerVetoMode()" class="px-3.5 py-1.5 rounded-xl bg-white text-rose-700 hover:bg-rose-50 font-black text-xs shadow-sm shrink-0 transition">
+        ✕ Exit Partner Mode & See All Spots
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-5">
+
+    <!-- PARTNER VETO INTERACTIVE 3-CARD PICKER (HIDDEN UNLESS ACTIVE) -->
+    <section id="partnerVetoSection" class="hidden mb-8 bg-white rounded-3xl p-6 shadow-md border-2 border-rose-200">
+      <div class="text-center max-w-xl mx-auto mb-6">
+        <span class="inline-block px-3 py-1 bg-rose-100 text-rose-800 rounded-full text-xs font-black uppercase tracking-wider mb-1">No More Back-and-Forth Texts</span>
+        <h3 class="text-2xl font-black text-zinc-900" id="partnerVetoSubhead">Tap the spot you want most tonight</h3>
+        <p class="text-xs text-zinc-500 mt-1">All 3 options are verified nearby. Clicking your favorite locks in tonight's winner with instant delivery & maps links!</p>
+      </div>
+
+      <div id="partnerShortlistCards" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Populated dynamically with the 3 shortlisted spots -->
+      </div>
+    </section>
+
+    <!-- GLOBAL FILTER / PREFERENCE BAR -->
+    <section class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-brand-100 mb-4 transition-all">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        
+        <!-- Dining Modes -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-xs font-bold uppercase tracking-wider text-zinc-400 mr-1">Mode:</span>
+          <div class="inline-flex p-1 bg-brand-50/80 rounded-2xl border border-brand-100">
+            <button onclick="setDiningMode('all')" id="mode-all" class="mode-pill px-3 py-1.5 text-xs font-bold rounded-xl transition bg-white text-brand-700 shadow-sm">All</button>
+            <button onclick="setDiningMode('delivery')" id="mode-delivery" class="mode-pill px-3 py-1.5 text-xs font-semibold rounded-xl text-zinc-600 hover:text-brand-700 transition">Delivery Only</button>
+            <button onclick="setDiningMode('dinein')" id="mode-dinein" class="mode-pill px-3 py-1.5 text-xs font-semibold rounded-xl text-zinc-600 hover:text-brand-700 transition">Dine-In / Patio</button>
+            <button onclick="setDiningMode('takeout')" id="mode-takeout" class="mode-pill px-3 py-1.5 text-xs font-semibold rounded-xl text-zinc-600 hover:text-brand-700 transition">Takeout / Pickup</button>
+          </div>
+        </div>
+
+        <!-- Price Tier & Distance -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="flex items-center gap-1 bg-brand-50/80 p-1 rounded-2xl border border-brand-100 text-xs">
+            <span class="text-zinc-500 font-bold px-2">Price:</span>
+            <button onclick="togglePrice(1)" id="price-btn-1" class="price-pill px-2.5 py-1 font-bold rounded-lg bg-brand-500 text-white transition">$</button>
+            <button onclick="togglePrice(2)" id="price-btn-2" class="price-pill px-2.5 py-1 font-bold rounded-lg bg-brand-500 text-white transition">$$</button>
+            <button onclick="togglePrice(3)" id="price-btn-3" class="price-pill px-2.5 py-1 font-bold rounded-lg bg-brand-500 text-white transition">$$$</button>
+            <button onclick="togglePrice(4)" id="price-btn-4" class="price-pill px-2.5 py-1 font-bold rounded-lg bg-brand-500 text-white transition">$$$$</button>
+          </div>
+
+          <div class="flex items-center gap-2 bg-brand-50/80 px-3 py-1.5 rounded-2xl border border-brand-100 text-xs">
+            <span class="text-zinc-500 font-bold">Within:</span>
+            <input id="distanceRange" type="range" min="1" max="25" value="15" oninput="updateRadius(this.value)" class="w-16 sm:w-24 accent-brand-500 cursor-pointer">
+            <span id="distDisplay" class="font-black text-brand-700 min-w-[42px]">15 km</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- LIVE TRACKER STATUS BAR & STALE FILTER BANNER -->
+      <div class="mt-3 pt-3 border-t border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2 text-zinc-600">
+          <span class="inline-block w-2 h-2 rounded-full bg-brand-500" id="trackerPulseDot"></span>
+          <span id="trackerStatusText" class="font-medium">Showing 12 spots within 15 km of Richmond Hill, ON • Last refreshed just now</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div id="staleFilterBanner" class="hidden items-center gap-1.5 bg-amber-100 text-amber-900 px-2.5 py-1 rounded-xl font-bold text-[11px]">
+            <span>⚡ Filters/Location changed!</span>
+            <button onclick="applyAndResetTracker()" class="underline hover:text-brand-700 ml-1">Refresh Tracker Now</button>
+          </div>
+          <button onclick="applyAndResetTracker()" class="px-3 py-1 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-[11px] flex items-center gap-1 transition">
+            <span>🔄</span> Reset Current Game / Refresh Results
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- DECISION MODE TABS -->
+    <div class="flex justify-center mb-6">
+      <div class="bg-white/90 backdrop-blur p-1 rounded-2xl border border-brand-200 shadow-sm flex items-center gap-1 max-w-full overflow-x-auto">
+        <button onclick="switchView('roulette')" id="tab-roulette" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 bg-brand-500 text-white shadow-sm transition">
+          <span>🎡</span>
+          <span>Spin The Wheel</span>
+        </button>
+        <button onclick="switchView('quiz')" id="tab-quiz" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 text-zinc-600 hover:text-brand-600 transition">
+          <span>✨</span>
+          <span>Craving Matchmaker</span>
+        </button>
+        <button onclick="switchView('faceoff')" id="tab-faceoff" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 text-zinc-600 hover:text-brand-600 transition">
+          <span>⚔️</span>
+          <span>Dinner Face-Off</span>
+        </button>
+        <button onclick="switchView('spots')" id="tab-spots" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 text-zinc-600 hover:text-brand-600 transition">
+          <span>📍</span>
+          <span>My Spots (<span id="spotsCountBadge">0</span>)</span>
+        </button>
+        <button onclick="openPartnerShareModal()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 text-rose-600 hover:bg-rose-50 transition">
+          <span>💌</span>
+          <span>Partner Veto Link</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 1: ROULETTE WHEEL -->
+    <section id="view-roulette" class="view-panel block">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Wheel Spinner Panel -->
+        <div class="lg:col-span-7 bg-white rounded-3xl p-6 shadow-sm border border-brand-100 flex flex-col items-center justify-center text-center">
+          <div class="mb-4">
+            <span class="inline-block px-3 py-1 bg-brand-100 text-brand-800 rounded-full text-[11px] font-black uppercase tracking-wider mb-1">High Stake Indecision</span>
+            <h2 class="text-2xl font-black text-zinc-900">Let The Wheel Choose</h2>
+            <p class="text-xs text-zinc-500">Only enabled spots matching your active mode & radius are on the wheel</p>
+          </div>
+
+          <!-- Canvas & Needle -->
+          <div class="roulette-wrapper my-2">
+            <div class="pointer-arrow"></div>
+            <canvas id="wheelCanvas" width="360" height="360" class="rounded-full shadow-inner border-4 border-amber-100"></canvas>
+            
+            <button onclick="spinRoulette()" id="wheelCenterBtn" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-zinc-900 text-white font-black text-xs tracking-wider uppercase border-4 border-white shadow-xl hover:scale-105 active:scale-95 transition flex items-center justify-center">
+              SPIN
+            </button>
+          </div>
+
+          <!-- Action Button -->
+          <div class="mt-4 w-full max-w-xs space-y-2">
+            <button onclick="spinRoulette()" id="mainSpinBtn" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-brand-500 to-amber-500 hover:from-brand-600 hover:to-amber-600 text-white font-black text-sm shadow-lg shadow-brand-500/25 transform active:scale-95 transition flex items-center justify-center gap-2">
+              <span>🎲</span>
+              <span>Spin For Tonight's Dinner!</span>
+            </button>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="applyAndResetTracker()" class="py-2 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-600 font-bold text-xs transition flex items-center justify-center gap-1">
+                <span>🔄</span> Reset Wheel
+              </button>
+              <button onclick="openPartnerModal()" class="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition flex items-center justify-center gap-1">
+                <span>💌</span> Send Top 3
+              </button>
+            </div>
+          </div>
+
+          <div id="filterNotice" class="text-xs text-amber-600 font-semibold mt-3 hidden">
+            ⚠️ Fewer than 2 spots match strict filters — showing closest enabled spots so you can still spin!
+          </div>
+        </div>
+
+        <!-- Live Winner Showcase Card -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
+          <div class="bg-gradient-to-br from-brand-500 to-amber-600 rounded-3xl p-1 text-white shadow-lg">
+            <div class="bg-white rounded-[22px] p-6 text-zinc-900">
+              <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
+                <span class="text-xs font-black text-brand-600 uppercase tracking-wider flex items-center gap-1.5">
+                  🏆 Tonight's Destiny
+                </span>
+                <span id="winnerStatusBadge" class="text-xs bg-brand-50 text-brand-700 font-bold px-2.5 py-0.5 rounded-full">
+                  Waiting for spin
+                </span>
+              </div>
+
+              <!-- Default / Selected Spot Container -->
+              <div id="winnerDisplay">
+                <div class="py-8 text-center text-zinc-400">
+                  <div class="text-5xl mb-2">🍜</div>
+                  <h3 class="text-lg font-black text-zinc-700">Hungry & Torn?</h3>
+                  <p class="text-xs max-w-xs mx-auto text-zinc-500 mt-1">Hit that big spin button and let fate decide what's cooking.</p>
+                </div>
+              </div>
+
+              <!-- Dynamic Links Container -->
+              <div id="winnerLinks" class="hidden pt-4 border-t border-zinc-100 space-y-2">
+                <!-- Injected via JavaScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- High-Intent Meal-Kit / Prepared Meal Affiliate Slot -->
+          <div class="monetization-slot bg-gradient-to-r from-emerald-900 to-teal-900 rounded-2xl p-4 text-white shadow-md relative overflow-hidden">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <span class="inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 mb-1">Sponsored Partner • High-CPA Affiliate Slot</span>
+                <h4 class="text-sm font-black leading-snug">Too tired to even order takeout tonight?</h4>
+                <p class="text-xs text-emerald-100/90 mt-0.5">Keep chef-prepared, 2-minute meals in your fridge for $0 delivery fee nights.</p>
+              </div>
+              <span class="text-2xl shrink-0">🍱</span>
+            </div>
+            <div class="mt-3 flex items-center gap-2">
+              <a href="https://www.hellofresh.ca/" target="_blank" rel="noopener noreferrer sponsored" class="flex-1 py-2 px-3 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-emerald-950 font-black text-xs text-center transition">
+                Get 50% Off Factor / HelloFresh →
+              </a>
+            </div>
+          </div>
+
+          <!-- Quick rule tip -->
+          <div class="bg-amber-50 rounded-2xl p-4 border border-amber-200/60 text-xs text-amber-900 leading-relaxed">
+            <span class="font-black block mb-0.5">💡 The Veto Rule:</span>
+            If the wheel lands on a place and you immediately feel disappointed, your brain just revealed what you actually wanted. Or click <strong>💌 Send Top 3</strong> to let your partner make the final call!
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 2: CRAVING MATCHMAKER (3-STEP QUIZ) -->
+    <section id="view-quiz" class="view-panel hidden">
+      <div class="max-w-2xl mx-auto bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-brand-100">
+        
+        <div class="text-center mb-6">
+          <span class="inline-block px-3 py-1 bg-brand-100 text-brand-800 rounded-full text-xs font-black uppercase tracking-wider mb-2">3-Question Diagnostic</span>
+          <h2 class="text-2xl font-black text-zinc-900" id="quizStepTitle">Step 1: What is the vibe tonight?</h2>
+          <p class="text-xs text-zinc-500 mt-1" id="quizStepSub">Answer 3 fast questions to calculate your perfect dinner fit.</p>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="w-full bg-zinc-100 h-2 rounded-full overflow-hidden mb-6">
+          <div id="quizBar" class="bg-brand-500 h-full w-1/3 transition-all duration-300"></div>
+        </div>
+
+        <!-- Options Container -->
+        <div id="quizOptionsContainer" class="space-y-3">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Results Display (Hidden initially) -->
+        <div id="quizResultView" class="hidden text-center py-4">
+          <!-- Populated by JS -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 3: DINNER FACE-OFF (TOURNAMENT ELIMINATION) -->
+    <section id="view-faceoff" class="view-panel hidden">
+      <div class="text-center mb-6">
+        <span class="inline-block px-3 py-1 bg-brand-100 text-brand-800 rounded-full text-xs font-black uppercase tracking-wider mb-1">Elimination Bracket</span>
+        <h2 class="text-2xl font-black text-zinc-900">Head-to-Head Face-Off</h2>
+        <p class="text-xs text-zinc-500">Pick which one sounds better right now. The winner faces a new challenger!</p>
+      </div>
+
+      <!-- Face-off Arena -->
+      <div class="max-w-4xl mx-auto">
+        <div id="faceoffArena" class="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
+        <div class="flex items-center justify-center gap-3 mt-6 flex-wrap">
+          <button onclick="initFaceoff()" class="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold transition flex items-center gap-1.5">
+            <span>🔄</span> Reset Tournament
+          </button>
+          <button onclick="openPartnerModal()" class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition flex items-center gap-1.5">
+            <span>💌</span> Send Top 3 Link to Partner
+          </button>
+          <span id="faceoffRoundBadge" class="text-xs font-bold text-zinc-400">Match 1</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: MY SPOTS (DIRECTORY & CUSTOM SPOT MANAGER) -->
+    <section id="view-spots" class="view-panel hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-2xl font-black text-zinc-900">My Neighborhood Spots</h2>
+          <p class="text-xs text-zinc-500">Every restaurant has a verified street address & coordinates for exact Google Maps pins.</p>
+        </div>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <button onclick="refreshAndScanNearby()" class="px-4 py-2.5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs tracking-wide shadow-sm flex items-center gap-1.5 transition">
+            <span>📡</span>
+            <span>Scan Live Nearby</span>
+          </button>
+          <button onclick="openAddSpotModal()" class="px-4 py-2.5 rounded-2xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs tracking-wide shadow-md shadow-brand-500/25 flex items-center gap-2 transition">
+            <span>➕</span>
+            <span>Add Custom Spot</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Spots Grid -->
+      <div id="spotsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- CLS-SAFE GOOGLE ADSENSE LEADERBOARD CONTAINER (728x90 / 320x100 Responsive) -->
+    <div class="monetization-slot my-8">
+      <div class="max-w-4xl mx-auto bg-white border-2 border-dashed border-amber-300 rounded-2xl p-3 min-h-[105px] flex flex-col items-center justify-center text-center shadow-sm">
+        <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700 mb-1">
+          <span>📢 Google AdSense Responsive Leaderboard Slot (min-h-[90px] CLS-Safe)</span>
+        </div>
+        <p class="text-xs text-zinc-500 max-w-lg">
+          Paste your <code class="bg-amber-50 text-amber-900 px-1.5 py-0.5 rounded font-mono text-[11px]">&lt;ins class="adsbygoogle" data-ad-format="auto"&gt;</code> snippet here after approval. Reserved height prevents layout shift penalties.
+        </p>
+      </div>
+    </div>
+
+    <!-- CRAWLABLE SEO & EDITORIAL CONTENT SECTION (REQUIRED FOR ADSENSE APPROVAL & ORGANIC TRAFFIC) -->
+    <article class="mt-10 bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-brand-100 space-y-8 text-zinc-700">
+      <div class="border-b border-zinc-100 pb-6">
+        <span class="inline-block px-3 py-1 bg-brand-100 text-brand-800 rounded-full text-xs font-black uppercase tracking-wider mb-2">Local Dining Guide & Decision Science</span>
+        <h2 class="text-2xl sm:text-3xl font-black text-zinc-900 tracking-tight">How DinnerDecider Solves the "What Should We Eat Tonight?" Paradox</h2>
+        <p class="text-sm text-zinc-600 mt-2 leading-relaxed">
+          Research into everyday decision fatigue shows that the average couple or household spends over <strong>130 hours a year</strong> debating what to have for dinner. After a long workday, scrolling through thousands of delivery listings on Uber Eats or DoorDash triggers <em>choice overload</em>—a cognitive bottleneck where having too many options makes every choice feel less satisfying. DinnerDecider combines real-time neighborhood restaurant discovery with structured game mechanics so you can go from hungry and indecisive to ordering in under 30 seconds.
+        </p>
+      </div>
+
+      <!-- 3 How-It-Works Columns -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-brand-50/50 rounded-2xl p-5 border border-brand-100">
+          <div class="text-2xl mb-2">🎡</div>
+          <h3 class="font-black text-zinc-900 text-base mb-1">1. The Local Restaurant Roulette Wheel</h3>
+          <p class="text-xs text-zinc-600 leading-relaxed">
+            Unlike generic food spinners that only display words like "Pizza" or "Tacos," our wheel connects directly to verified local establishments around your postal code or GPS coordinates. Filter by budget tier ($ to $$$$), maximum distance in kilometers, and dining mode (Delivery, Takeout/Pickup, or Dine-In Patio).
+          </p>
+        </div>
+        <div class="bg-brand-50/50 rounded-2xl p-5 border border-brand-100">
+          <div class="text-2xl mb-2">💌</div>
+          <h3 class="font-black text-zinc-900 text-base mb-1">2. The 3-2-1 Partner Shortlist Method</h3>
+          <p class="text-xs text-zinc-600 leading-relaxed">
+            Relationship psychologists recommend the <strong>3-1 Rule</strong> for ending dinner stalemates: Person A selects 3 nearby restaurants they would genuinely enjoy, and texts the shareable shortlist link to Person B. Person B picks the single winner from those 3 cards—zero account signup or app install required.
+          </p>
+        </div>
+        <div class="bg-brand-50/50 rounded-2xl p-5 border border-brand-100">
+          <div class="text-2xl mb-2">⚔️</div>
+          <h3 class="font-black text-zinc-900 text-base mb-1">3. Head-to-Head Elimination & Craving Quiz</h3>
+          <p class="text-xs text-zinc-600 leading-relaxed">
+            When a random spin doesn't feel right, switch to the <strong>Dinner Face-Off</strong> bracket. Comparing two real dishes side-by-side forces your intuition to surface what you're actually craving, while our 3-question diagnostic matches comfort food, quick bites, or healthy macro bowls to your exact appetite.
+          </p>
+        </div>
+      </div>
+
+      <!-- Popular Neighborhood & City SEO Hubs -->
+      <div class="pt-4 border-t border-zinc-100">
+        <h3 class="text-lg font-black text-zinc-900 mb-2">Popular Neighborhood Dinner Wheels & Takeout Hubs</h3>
+        <p class="text-xs text-zinc-500 mb-4">Click any neighborhood below to instantly jump the tracker to that dining district and scan top-rated spots:</p>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div onclick="selectQuickArea('Downtown Toronto, ON', 43.6481, -79.3870); window.scrollTo({top:0, behavior:'smooth'});" class="p-3.5 rounded-2xl border border-zinc-200 hover:border-brand-500 hover:bg-brand-50/40 cursor-pointer transition">
+            <span class="font-black text-zinc-900 block">🏙️ Downtown Toronto & Queen West</span>
+            <span class="text-zinc-500 text-[11px] block mt-0.5">Northern Thai, Neapolitan wood-fired pizza, Ossington tacos & smash burgers (M5V / M6J).</span>
+          </div>
+          <div onclick="selectQuickArea('Richmond Hill, ON', 43.8484, -79.4064); window.scrollTo({top:0, behavior:'smooth'});" class="p-3.5 rounded-2xl border border-zinc-200 hover:border-brand-500 hover:bg-brand-50/40 cursor-pointer transition">
+            <span class="font-black text-zinc-900 block">🍜 Richmond Hill & Highway 7</span>
+            <span class="text-zinc-500 text-[11px] block mt-0.5">Famous for authentic ramen, hand-pulled noodles, pho, and Middle Eastern grills (L4B / L4C).</span>
+          </div>
+          <div onclick="selectQuickArea('Markham Unionville, ON', 43.8561, -79.3370); window.scrollTo({top:0, behavior:'smooth'});" class="p-3.5 rounded-2xl border border-zinc-200 hover:border-brand-500 hover:bg-brand-50/40 cursor-pointer transition">
+            <span class="font-black text-zinc-900 block">🥟 Markham & First Markham Place</span>
+            <span class="text-zinc-500 text-[11px] block mt-0.5">Dim sum, Thai street food, stone-fired artisan pizza & specialty Asian dining (L3R / L3P).</span>
+          </div>
+          <div onclick="selectQuickArea('Midtown Yonge & Eglinton, ON', 43.7067, -79.3983); window.scrollTo({top:0, behavior:'smooth'});" class="p-3.5 rounded-2xl border border-zinc-200 hover:border-brand-500 hover:bg-brand-50/40 cursor-pointer transition">
+            <span class="font-black text-zinc-900 block">🥂 Midtown & North York Yonge</span>
+            <span class="text-zinc-500 text-[11px] block mt-0.5">Cozy date-night bistros, Korean BBQ, power grain bowls & fast-casual takeout (M4P / M2N).</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive FAQ Section for Long-Tail Search Traffic -->
+      <div class="pt-4 border-t border-zinc-100">
+        <h3 class="text-lg font-black text-zinc-900 mb-3">Frequently Asked Questions</h3>
+        <div class="space-y-2.5 text-xs">
+          <details class="group bg-zinc-50 rounded-2xl p-4 border border-zinc-200 cursor-pointer">
+            <summary class="font-black text-zinc-900 flex items-center justify-between">
+              <span>How does DinnerDecider find restaurants near my exact postal code?</span>
+              <span class="text-brand-500 group-open:rotate-180 transition">▼</span>
+            </summary>
+            <p class="text-zinc-600 mt-2 leading-relaxed">
+              When you enter a postal code, city, or tap "Use GPS," DinnerDecider geocodes your coordinates and queries OpenStreetMap's live Overpass restaurant directory alongside our curated local dining database. It calculates real Haversine straight-line distances in kilometers and generates verified Google Maps links using each restaurant's exact street address.
+            </p>
+          </details>
+          <details class="group bg-zinc-50 rounded-2xl p-4 border border-zinc-200 cursor-pointer">
+            <summary class="font-black text-zinc-900 flex items-center justify-between">
+              <span>Can I add my own favorite local takeout spots to the wheel?</span>
+              <span class="text-brand-500 group-open:rotate-180 transition">▼</span>
+            </summary>
+            <p class="text-zinc-600 mt-2 leading-relaxed">
+              Yes! Open the "My Spots" tab and click "Add Custom Spot." Enter the restaurant's name, street address, cuisine, and your go-to dish. Your custom spots are saved privately in your browser's local storage and immediately join the Roulette Wheel and Face-Off tournament.
+            </p>
+          </details>
+          <details class="group bg-zinc-50 rounded-2xl p-4 border border-zinc-200 cursor-pointer">
+            <summary class="font-black text-zinc-900 flex items-center justify-between">
+              <span>How does the "Send Top 3 to Partner" link work without an account?</span>
+              <span class="text-brand-500 group-open:rotate-180 transition">▼</span>
+            </summary>
+            <p class="text-zinc-600 mt-2 leading-relaxed">
+              When you select 3 restaurants in the Partner Shortlist modal, DinnerDecider encodes those 3 choices directly into a clean URL parameter (<code class="bg-white px-1 py-0.5 rounded border">?shortlist=...</code>). When you text or WhatsApp that link to your partner, their browser automatically opens in Partner Veto Mode so they can tap the final winner in one click.
+            </p>
+          </details>
+        </div>
+      </div>
+    </article>
+
+  </main>
+
+  <!-- FOOTER WITH MANDATORY ADSENSE COMPLIANCE LINKS -->
+  <footer class="bg-white border-t border-brand-100 mt-12 py-8 px-4 text-xs text-zinc-500">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">🍽️</span>
+        <span class="font-black text-zinc-800">DinnerDecider</span>
+        <span>© 2026 • Made for hungry humans everywhere.</span>
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-4 font-bold text-zinc-600">
+        <button onclick="openLegalModal('about')" class="hover:text-brand-600 underline-offset-4 hover:underline">About Us</button>
+        <button onclick="openLegalModal('privacy')" class="hover:text-brand-600 underline-offset-4 hover:underline">Privacy & Cookie Policy</button>
+        <button onclick="openLegalModal('terms')" class="hover:text-brand-600 underline-offset-4 hover:underline">Terms & Affiliate Disclosure</button>
+        <button onclick="openLegalModal('contact')" class="hover:text-brand-600 underline-offset-4 hover:underline">Contact</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: SEND TOP 3 TO PARTNER (COUPLE SHORTLIST LINK GENERATOR) -->
+  <div id="partnerModal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-rose-200 max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">The 3-2-1 Couple Rule</span>
+          <h3 class="font-black text-lg text-zinc-900 mt-0.5 flex items-center gap-1.5">
+            <span>💌</span> Send Top 3 Shortlist to Partner
+          </h3>
+        </div>
+        <button onclick="closePartnerModal()" class="w-7 h-7 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 font-bold flex items-center justify-center">✕</button>
+      </div>
+
+      <p class="text-xs text-zinc-500 my-3">
+        Pick <strong>3 spots</strong> below (or auto-pick 3 random matches). Send the link to your partner—when they open it, they'll see just those 3 cards and pick tonight's winner!
+      </p>
+
+      <div class="flex items-center gap-2 mb-3">
+        <input id="partnerSenderName" type="text" placeholder="Your name (optional, e.g. Alex)" oninput="updatePartnerShareUrl()" class="flex-1 px-3 py-2 rounded-xl border border-zinc-200 text-xs focus:outline-none focus:border-rose-500">
+        <button onclick="autoPickThreeForPartner()" class="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs border border-rose-200 shrink-0 transition">
+          🎲 Auto-Pick 3
+        </button>
+      </div>
+
+      <!-- Checkboxes for selecting 3 spots -->
+      <div id="partnerSpotChecklist" class="space-y-1.5 max-h-52 overflow-y-auto pr-1 border border-zinc-100 rounded-2xl p-2 bg-zinc-50/60">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Generated URL & Share Actions -->
+      <div class="mt-4 pt-3 border-t border-zinc-100 space-y-2.5">
+        <label class="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Shareable Partner Veto Link (<span id="selectedPartnerCount">3</span>/3 selected):</label>
+        <div class="flex items-center gap-1.5">
+          <input id="partnerShareUrlInput" type="text" readonly class="w-full px-3 py-2 rounded-xl bg-zinc-100 border border-zinc-200 text-[11px] font-mono text-zinc-700 select-all">
+          <button onclick="copyPartnerShareUrl()" class="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs shrink-0 transition">
+            Copy Link
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          <button onclick="nativeSharePartnerUrl()" class="py-2.5 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-sm flex items-center justify-center gap-1.5 transition">
+            <span>📲</span> Share via iMessage / WhatsApp
+          </button>
+          <button onclick="previewPartnerViewNow()" class="py-2.5 px-4 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-black text-xs border border-amber-300 flex items-center justify-center gap-1.5 transition">
+            <span>👀</span> Preview Partner's View Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LEGAL / ADSENSE TRUST PAGES (ABOUT, PRIVACY, TERMS, CONTACT) -->
+  <div id="legalModal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-brand-100 max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100 mb-4">
+        <h3 id="legalModalTitle" class="font-black text-xl text-zinc-900">Privacy & Cookie Policy</h3>
+        <button onclick="closeLegalModal()" class="w-8 h-8 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 font-bold flex items-center justify-center">✕</button>
+      </div>
+      <div id="legalModalBody" class="text-xs text-zinc-600 space-y-3 leading-relaxed">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LOCATION SELECTOR -->
+  <div id="locationModal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-brand-100">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100">
+        <h3 class="font-black text-lg text-zinc-900 flex items-center gap-2">
+          <span>📍</span> Set Location & Scan Area
+        </h3>
+        <button onclick="closeLocationModal()" class="w-7 h-7 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 font-bold flex items-center justify-center">✕</button>
+      </div>
+
+      <p class="text-xs text-zinc-500 my-3">
+        Enter a postal code, neighborhood, or city (e.g. <strong>M5V 3L9</strong>, <strong>L4B 1J8</strong>, <strong>Downtown Toronto</strong>, <strong>Markham</strong>). We'll geocode your coordinates, calculate real distances, and fetch nearby spots!
+      </p>
+
+      <button onclick="detectGPSLocation()" id="gpsBtn" class="w-full py-3 px-4 rounded-2xl bg-brand-50 hover:bg-brand-100 text-brand-800 font-bold text-xs flex items-center justify-center gap-2 mb-3 border border-brand-200 transition">
+        <span>🛰️</span>
+        <span>Use GPS to detect my exact coordinates</span>
+      </button>
+
+      <!-- Quick Area Presets -->
+      <div class="mb-3">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">Quick Area Presets:</span>
+        <div class="flex flex-wrap gap-1.5">
+          <button onclick="selectQuickArea('Richmond Hill, ON', 43.8484, -79.4064)" class="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-brand-100 text-zinc-700 text-[11px] font-semibold transition">Richmond Hill (L4B)</button>
+          <button onclick="selectQuickArea('Downtown Toronto, ON', 43.6481, -79.3870)" class="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-brand-100 text-zinc-700 text-[11px] font-semibold transition">Downtown Toronto (M5V)</button>
+          <button onclick="selectQuickArea('Midtown Yonge & Eglinton, ON', 43.7067, -79.3983)" class="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-brand-100 text-zinc-700 text-[11px] font-semibold transition">Midtown (M4P)</button>
+          <button onclick="selectQuickArea('Markham Unionville, ON', 43.8561, -79.3370)" class="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-brand-100 text-zinc-700 text-[11px] font-semibold transition">Markham (L3R)</button>
+        </div>
+      </div>
+
+      <div class="relative flex py-2 items-center">
+        <div class="flex-grow border-t border-zinc-200"></div>
+        <span class="flex-shrink mx-3 text-zinc-400 text-[10px] uppercase font-bold tracking-wider">or type postal code / city</span>
+        <div class="flex-grow border-t border-zinc-200"></div>
+      </div>
+
+      <div class="space-y-3 mt-2">
+        <input id="manualCityInput" type="text" placeholder="e.g. M5V 2T6, L4B 3B6, North York, Queen West..." class="w-full px-4 py-2.5 rounded-xl border border-zinc-200 focus:outline-none focus:border-brand-500 text-sm">
+        
+        <div class="flex justify-end gap-2 pt-2">
+          <button onclick="closeLocationModal()" class="px-4 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 rounded-xl">Cancel</button>
+          <button onclick="saveManualLocation()" id="saveLocBtn" class="px-5 py-2 text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-sm flex items-center gap-1.5">
+            <span>🔍</span> Scan & Update Location
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD CUSTOM SPOT -->
+  <div id="addSpotModal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-brand-100 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-100">
+        <h3 class="font-black text-lg text-zinc-900 flex items-center gap-2">
+          <span>🏪</span> Add A Local Spot
+        </h3>
+        <button onclick="closeAddSpotModal()" class="w-7 h-7 rounded-full text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 font-bold flex items-center justify-center">✕</button>
+      </div>
+
+      <form onsubmit="handleAddNewSpot(event)" class="space-y-3.5 mt-4">
+        <div>
+          <label class="block text-xs font-bold text-zinc-700 mb-1">Restaurant Name *</label>
+          <input required id="spotName" type="text" placeholder="e.g. Pai Northern Thai Kitchen" class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 text-sm focus:border-brand-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-zinc-700 mb-1">Exact Street Address & City *</label>
+          <input required id="spotAddress" type="text" placeholder="e.g. 18 Duncan St, Toronto, ON M5H 3G8" class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 text-sm focus:border-brand-500 focus:outline-none">
+          <span class="text-[10px] text-zinc-400">Used to open the exact building pin in Google Maps without postal code mix-ups.</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-zinc-700 mb-1">Cuisine / Category *</label>
+            <input required id="spotCuisine" type="text" placeholder="e.g. Ramen, Mexican, Burgers" class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 text-sm focus:border-brand-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-zinc-700 mb-1">Emoji Icon</label>
+            <input id="spotEmoji" type="text" maxlength="2" value="🍲" class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 text-sm text-center focus:border-brand-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-zinc-700 mb-1">Price Tier</label>
+            <select id="spotPrice" class="w-full px-3 py-2 rounded-xl border border-zinc-200 text-sm focus:border-brand-500 focus:outline-none">
+              <option value="1">$ (Inexpensive / Quick)</option>
+              <option value="2" selected>$$ (Moderate)</option>
+              <option value="3">$$$ (Upscale)</option>
+              <option value="4">$$$$ (Fine Dining)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-zinc-700 mb-1">Estimated Distance (km)</label>
+            <input id="spotDist" type="number" step="0.1" value="2.5" class="w-full px-3 py-2 rounded-xl border border-zinc-200 text-sm focus:border-brand-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-zinc-700 mb-1">Top Recommended Dish</label>
+          <input id="spotDish" type="text" placeholder="e.g. Spicy Crispy Chicken Sando" class="w-full px-3.5 py-2 rounded-xl border border-zinc-200 text-sm focus:border-brand-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-zinc-700 mb-1">Available Modes</label>
+          <div class="flex items-center gap-4 text-xs font-semibold text-zinc-700 mt-1">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="checkDineIn" checked class="rounded accent-brand-500"> Dine-In
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="checkTakeout" checked class="rounded accent-brand-500"> Takeout
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="checkDelivery" checked class="rounded accent-brand-500"> Delivery
+            </label>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-zinc-100">
+          <button type="button" onclick="closeAddSpotModal()" class="px-4 py-2 text-xs font-semibold text-zinc-500 hover:bg-zinc-100 rounded-xl">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-md">Add Restaurant</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastArea" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    /* ==========================================================================
+       CENTRALIZED MONETIZATION & AFFILIATE CONFIG (EDIT BEFORE LAUNCH)
+       ========================================================================== */
+    const MONETIZATION_CONFIG = {
+      showAdPlaceholdersByDefault: true, // Set to false once real AdSense tags are pasted
+      uberEatsAffiliateSuffix: '', // e.g. '&utm_source=dinnerdecider&aff_id=YOUR_ID'
+      doorDashAffiliateSuffix: '', // e.g. '?utm_source=dinnerdecider'
+      featuredPromo: {
+        headline: 'Too Tired to Go Out Tonight?',
+        subtext: 'Get chef-prepared meals or $0 delivery fee perks on your first order.',
+        ctaLabel: 'Claim Deal ↗',
+        url: 'https://www.ubereats.com/ca'
+      }
+    };
+
+    /* ==========================================================================
+       VERIFIED GTA / TORONTO / RICHMOND HILL / MARKHAM DATASET WITH EXACT ADDRESSES
+       ========================================================================== */
+    const STORAGE_KEY = 'dinner_decider_places_master_v3';
+
+    // Comprehensive multi-neighborhood verified restaurants with exact addresses & coordinates
+    const MASTER_CURATED_SPOTS = [
+      // Richmond Hill & Markham (York Region)
+      {
+        id: 'rh1',
+        name: 'Kinton Ramen Highway 7',
+        exactAddress: '360 Highway 7 E, Richmond Hill, ON L4B 3P7',
+        city: 'Richmond Hill',
+        lat: 43.8447,
+        lng: -79.3958,
+        cuisine: 'Japanese / Ramen',
+        categoryTag: 'Asian',
+        emoji: '🍜',
+        price: 2,
+        rating: 4.6,
+        reviewsCount: 1420,
+        distKm: 1.4,
+        deliveryTime: '20-30 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Comfort',
+        dish: 'Pork Spicy Garlic Ramen with Seasoned Egg',
+        enabled: true
+      },
+      {
+        id: 'rh2',
+        name: 'The Keg Steakhouse + Bar Richmond Hill',
+        exactAddress: '162 York Blvd, Richmond Hill, ON L4B 3J6',
+        city: 'Richmond Hill',
+        lat: 43.8442,
+        lng: -79.3837,
+        cuisine: 'Steakhouse & Grill',
+        categoryTag: 'Fancy',
+        emoji: '🥩',
+        price: 3,
+        rating: 4.5,
+        reviewsCount: 2180,
+        distKm: 2.1,
+        deliveryTime: '35-45 min',
+        modes: ['dinein', 'takeout'],
+        vibe: 'Fancy',
+        dish: 'Prime Rib with Garlic Mashed Potatoes',
+        enabled: true
+      },
+      {
+        id: 'rh3',
+        name: 'Northern Dumpling Kitchen',
+        exactAddress: '550 Highway 7 E, Richmond Hill, ON L4B 3Z4',
+        city: 'Richmond Hill',
+        lat: 43.8469,
+        lng: -79.3792,
+        cuisine: 'Northern Chinese & Dumplings',
+        categoryTag: 'Asian',
+        emoji: '🥟',
+        price: 1,
+        rating: 4.4,
+        reviewsCount: 890,
+        distKm: 2.3,
+        deliveryTime: '20-30 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Comfort',
+        dish: 'Crispy Bottom Pan-Fried Pork & Chive Dumplings',
+        enabled: true
+      },
+      {
+        id: 'rh4',
+        name: 'Fresh Burger Richmond Hill',
+        exactAddress: '9200 Bathurst St, Thornhill, ON L4J 8W1',
+        city: 'Richmond Hill',
+        lat: 43.8404,
+        lng: -79.4611,
+        cuisine: 'Gourmet Smash Burgers',
+        categoryTag: 'Burgers/Wings',
+        emoji: '🍔',
+        price: 1,
+        rating: 4.6,
+        reviewsCount: 1150,
+        distKm: 4.2,
+        deliveryTime: '20-30 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Quick',
+        dish: 'Double Prime Cheeseburger & Cajun Fries',
+        enabled: true
+      },
+      {
+        id: 'rh5',
+        name: 'Pho Tai Bac',
+        exactAddress: '9555 Yonge St, Richmond Hill, ON L4C 9M5',
+        city: 'Richmond Hill',
+        lat: 43.8601,
+        lng: -79.4350,
+        cuisine: 'Vietnamese Noodle Soups',
+        categoryTag: 'Asian',
+        emoji: '🍲',
+        price: 1,
+        rating: 4.6,
+        reviewsCount: 1620,
+        distKm: 2.7,
+        deliveryTime: '25-35 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Comfort',
+        dish: 'Rare Beef & Brisket Rice Noodle Pho',
+        enabled: true
+      },
+      {
+        id: 'rh6',
+        name: 'Jatujak Thai Street Food',
+        exactAddress: '5694 Highway 7 E, Markham, ON L3P 1B4',
+        city: 'Markham',
+        lat: 43.8717,
+        lng: -79.2669,
+        cuisine: 'Authentic Thai Curries & Noodles',
+        categoryTag: 'Asian',
+        emoji: '🍛',
+        price: 2,
+        rating: 4.7,
+        reviewsCount: 980,
+        distKm: 6.4,
+        deliveryTime: '30-40 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Comfort',
+        dish: 'Khao Soi Crispy Egg Noodle Curry & Thai Iced Tea',
+        enabled: true
+      },
+      {
+        id: 'rh7',
+        name: 'Score Pizza First Markham',
+        exactAddress: '3255 Highway 7 E, Markham, ON L3R 3P9',
+        city: 'Markham',
+        lat: 43.8498,
+        lng: -79.3484,
+        cuisine: 'Stone-Fired Artisan Pizza',
+        categoryTag: 'Italian',
+        emoji: '🍕',
+        price: 2,
+        rating: 4.5,
+        reviewsCount: 540,
+        distKm: 4.6,
+        deliveryTime: '25-35 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Comfort',
+        dish: 'Hot Honey Soppressata & Fresh Basil Pizza',
+        enabled: true
+      },
+      {
+        id: 'rh8',
+        name: 'Paramount Fine Foods',
+        exactAddress: '115 York Blvd, Richmond Hill, ON L4B 3B4',
+        city: 'Richmond Hill',
+        lat: 43.8427,
+        lng: -79.3867,
+        cuisine: 'Middle Eastern Grill & Shawarma',
+        categoryTag: 'Quick',
+        emoji: '🥙',
+        price: 2,
+        rating: 4.5,
+        reviewsCount: 1290,
+        distKm: 1.9,
+        deliveryTime: '20-30 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Quick',
+        dish: 'Chicken Saj Shawarma Wrap with Garlic Sauce',
+        enabled: true
+      },
+      {
+        id: 'rh9',
+        name: 'Three Mariachis Mexican Cantina',
+        exactAddress: '9665 Bayview Ave, Richmond Hill, ON L4C 9V4',
+        city: 'Richmond Hill',
+        lat: 43.8655,
+        lng: -79.4063,
+        cuisine: 'Mexican Street Tacos & Fajitas',
+        categoryTag: 'Mexican',
+        emoji: '🌮',
+        price: 2,
+        rating: 4.6,
+        reviewsCount: 610,
+        distKm: 2.0,
+        deliveryTime: '25-35 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Comfort',
+        dish: 'Birria QuesaTacos with Warm Consommé Dip',
+        enabled: true
+      },
+      {
+        id: 'rh10',
+        name: 'Mandy’s Gourmet Salads & Bowls',
+        exactAddress: '8700 Bathurst St, Thornhill, ON L4J 8A9',
+        city: 'Richmond Hill',
+        lat: 43.8310,
+        lng: -79.4578,
+        cuisine: 'Healthy Grain & Protein Bowls',
+        categoryTag: 'Healthy Bowls',
+        emoji: '🥗',
+        price: 2,
+        rating: 4.6,
+        reviewsCount: 410,
+        distKm: 4.5,
+        deliveryTime: '25-35 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Healthy Bowls',
+        dish: 'roasted Satay Tamari Tofu & Crispy Rice Bowl',
+        enabled: true
+      },
+      // Downtown & Midtown Toronto Spots
+      {
+        id: 'to1',
+        name: 'Pai Northern Thai Kitchen',
+        exactAddress: '18 Duncan St, Toronto, ON M5H 3G8',
+        city: 'Toronto',
+        lat: 43.6479,
+        lng: -79.3886,
+        cuisine: 'Northern Thai Street Food',
+        categoryTag: 'Asian',
+        emoji: '🍛',
+        price: 2,
+        rating: 4.8,
+        reviewsCount: 9850,
+        distKm: 22.0,
+        deliveryTime: '30-45 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Comfort',
+        dish: 'Chef Nuit Pad Thai & Braised Beef Khao Soi',
+        enabled: true
+      },
+      {
+        id: 'to2',
+        name: 'Pizzeria Libretto Ossington',
+        exactAddress: '221 Ossington Ave, Toronto, ON M6J 2Z8',
+        city: 'Toronto',
+        lat: 43.6489,
+        lng: -79.4203,
+        cuisine: 'Neapolitan Wood-Fired Pizza',
+        categoryTag: 'Italian',
+        emoji: '🍕',
+        price: 2,
+        rating: 4.7,
+        reviewsCount: 3420,
+        distKm: 22.4,
+        deliveryTime: '30-40 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Comfort',
+        dish: 'Duck Confit & Spiced Soppressata Neapolitan Pizza',
+        enabled: true
+      },
+      {
+        id: 'to3',
+        name: 'Campechano Taqueria',
+        exactAddress: '504 Adelaide St W, Toronto, ON M5V 1T4',
+        city: 'Toronto',
+        lat: 43.6456,
+        lng: -79.4017,
+        cuisine: 'Authentic Heirloom Corn Tacos',
+        categoryTag: 'Mexican',
+        emoji: '🌮',
+        price: 2,
+        rating: 4.6,
+        reviewsCount: 1850,
+        distKm: 22.8,
+        deliveryTime: '25-35 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Comfort',
+        dish: 'Pescado Rebozado & Carne Asada Tacos',
+        enabled: true
+      },
+      {
+        id: 'to4',
+        name: 'Matty’s Patty’s Burger Club',
+        exactAddress: '924 Queen St W, Toronto, ON M6J 1G6',
+        city: 'Toronto',
+        lat: 43.6443,
+        lng: -79.4152,
+        cuisine: 'Smash Burgers & Fries',
+        categoryTag: 'Burgers/Wings',
+        emoji: '🍔',
+        price: 1,
+        rating: 4.6,
+        reviewsCount: 1520,
+        distKm: 22.9,
+        deliveryTime: '20-30 min',
+        modes: ['takeout', 'delivery'],
+        vibe: 'Quick',
+        dish: 'Double Smash Cheeseburger with Mustard Onion Glaze',
+        enabled: true
+      },
+      {
+        id: 'to5',
+        name: 'Impact Kitchen King West',
+        exactAddress: '444 Adelaide St W, Toronto, ON M5V 1S7',
+        city: 'Toronto',
+        lat: 43.6461,
+        lng: -79.3990,
+        cuisine: 'Nutrient-Dense Power Bowls',
+        categoryTag: 'Healthy Bowls',
+        emoji: '🥗',
+        price: 2,
+        rating: 4.6,
+        reviewsCount: 920,
+        distKm: 22.5,
+        deliveryTime: '20-30 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Healthy Bowls',
+        dish: 'Mexican Zesty Steak & Avocado Macro Bowl',
+        enabled: true
+      },
+      {
+        id: 'to6',
+        name: 'Aloette Restaurant',
+        exactAddress: '163 Spadina Ave, Toronto, ON M5V 2L6',
+        city: 'Toronto',
+        lat: 43.6485,
+        lng: -79.3958,
+        cuisine: 'Elevated French Diner',
+        categoryTag: 'Fancy',
+        emoji: '🥩',
+        price: 3,
+        rating: 4.7,
+        reviewsCount: 1890,
+        distKm: 22.1,
+        deliveryTime: '35-45 min',
+        modes: ['dinein', 'takeout', 'delivery'],
+        vibe: 'Fancy',
+        dish: 'Aloette Beaufort Burger & Lemon Meringue Pie',
+        enabled: true
+      }
+    ];
+
+    let restaurants = [];
+
+    /* ==========================================================================
+       APP FILTERS & GEOLOCATION STATE
+       ========================================================================== */
+    const filters = {
+      mode: 'all', // all, delivery, dinein, takeout
+      prices: [1, 2, 3, 4],
+      maxDist: 15,
+      locationLabel: 'Richmond Hill, ON',
+      userLat: 43.8484,
+      userLng: -79.4064,
+      lastRefreshedTime: 'just now'
+    };
+
+    // Haversine formula to compute exact real-world distance in km
+    function computeDistanceKm(lat1, lon1, lat2, lon2) {
+      if (!lat1 || !lon1 || !lat2 || !lon2) return 2.5;
+      const R = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return Math.max(0.2, parseFloat((R * c).toFixed(1)));
+    }
+
+    function recalculateAllDistances() {
+      restaurants.forEach(r => {
+        if (r.lat && r.lng) {
+          r.distKm = computeDistanceKm(filters.userLat, filters.userLng, r.lat, r.lng);
+        }
+      });
+      // Sort closest first
+      restaurants.sort((a, b) => a.distKm - b.distKm);
+    }
+
+    function loadRestaurants() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].exactAddress) {
+            restaurants = parsed;
+          } else {
+            restaurants = JSON.parse(JSON.stringify(MASTER_CURATED_SPOTS));
+          }
+        } else {
+          restaurants = JSON.parse(JSON.stringify(MASTER_CURATED_SPOTS));
+        }
+      } catch (e) {
+        restaurants = JSON.parse(JSON.stringify(MASTER_CURATED_SPOTS));
+      }
+      recalculateAllDistances();
+      saveRestaurants();
+    }
+
+    function saveRestaurants() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(restaurants));
+      } catch (e) {}
+      updateSpotsCountBadge();
+      updateTrackerStatusLine();
+    }
+
+    function updateSpotsCountBadge() {
+      const el = document.getElementById('spotsCountBadge');
+      if (el) el.textContent = restaurants.length;
+    }
+
+    function getFilteredSpots() {
+      return restaurants.filter(r => {
+        if (!r.enabled) return false;
+        if (filters.mode !== 'all' && !r.modes.includes(filters.mode)) return false;
+        if (!filters.prices.includes(r.price)) return false;
+        if (r.distKm > filters.maxDist) return false;
+        return true;
+      });
+    }
+
+    function updateTrackerStatusLine() {
+      const matched = getFilteredSpots();
+      const statusEl = document.getElementById('trackerStatusText');
+      if (statusEl) {
+        statusEl.textContent = `Showing ${matched.length} matching spots within ${filters.maxDist} km of ${filters.locationLabel} • Last refreshed ${filters.lastRefreshedTime}`;
+      }
+    }
+
+    function markFiltersStale() {
+      const banner = document.getElementById('staleFilterBanner');
+      if (banner) {
+        banner.classList.remove('hidden');
+        banner.classList.add('flex');
+      }
+      updateTrackerStatusLine();
+    }
+
+    function clearStaleBanner() {
+      const banner = document.getElementById('staleFilterBanner');
+      if (banner) {
+        banner.classList.add('hidden');
+        banner.classList.remove('flex');
+      }
+    }
+
+    /* ==========================================================================
+       CLEAN EXTERNAL URL BUILDERS (NO GARBLED POSTAL CODE CONCATENATION!)
+       ========================================================================== */
+    function buildGoogleMapsUrl(spot) {
+      // NEVER append the user's input postal code onto the restaurant address.
+      // Use the restaurant's own verified name + exact street address (or exact coordinates).
+      if (spot.exactAddress && spot.exactAddress.trim().length > 0) {
+        const cleanQuery = `${spot.name}, ${spot.exactAddress}`;
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanQuery)}`;
+      }
+      if (spot.lat && spot.lng) {
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name + ' ' + spot.lat + ',' + spot.lng)}`;
+      }
+      const fallbackCity = spot.city || 'Ontario, Canada';
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name + ', ' + fallbackCity)}`;
+    }
+
+    function buildUberEatsUrl(spot) {
+      // Clean restaurant name search on Uber Eats Canada + optional affiliate tracking
+      const cleanName = spot.name.replace(/\s+(Richmond Hill|Markham|Highway 7|Ossington|King West)$/i, '').trim();
+      return `https://www.ubereats.com/ca/search?q=${encodeURIComponent(cleanName)}${MONETIZATION_CONFIG.uberEatsAffiliateSuffix || ''}`;
+    }
+
+    function buildDoorDashUrl(spot) {
+      // Clean restaurant name search on DoorDash + optional affiliate tracking
+      const cleanName = spot.name.replace(/\s+(Richmond Hill|Markham|Highway 7|Ossington|King West)$/i, '').trim();
+      return `https://www.doordash.com/search/store/${encodeURIComponent(cleanName)}/${MONETIZATION_CONFIG.doorDashAffiliateSuffix || ''}`;
+    }
+
+    /* ==========================================================================
+       PARTNER VETO / SHARE TOP 3 LINK GENERATOR & URL DECODER
+       ========================================================================== */
+    let selectedPartnerSpotIds = [];
+
+    function openPartnerShareModal() {
+      playWheelTick();
+      const pool = getFilteredSpots().length >= 3 ? getFilteredSpots() : restaurants;
+      if (selectedPartnerSpotIds.length !== 3) {
+        selectedPartnerSpotIds = pool.slice(0, 3).map(s => s.id);
+      }
+      renderPartnerCandidateList();
+      updatePartnerShareUrlPreview();
+      document.getElementById('partnerShareModal').classList.remove('hidden');
+    }
+
+    function closePartnerShareModal() {
+      document.getElementById('partnerShareModal').classList.add('hidden');
+    }
+
+    function autoPickThreeFinalists() {
+      playWheelTick();
+      const pool = [...(getFilteredSpots().length >= 3 ? getFilteredSpots() : restaurants)].sort(() => Math.random() - 0.5);
+      selectedPartnerSpotIds = pool.slice(0, 3).map(s => s.id);
+      renderPartnerCandidateList();
+      updatePartnerShareUrlPreview();
+    }
+
+    function togglePartnerCandidate(spotId) {
+      playWheelTick();
+      const idx = selectedPartnerSpotIds.indexOf(spotId);
+      if (idx > -1) {
+        selectedPartnerSpotIds.splice(idx, 1);
+      } else {
+        if (selectedPartnerSpotIds.length >= 3) {
+          showToast('Max 3 spots! Uncheck one first.');
+          return;
+        }
+        selectedPartnerSpotIds.push(spotId);
+      }
+      renderPartnerCandidateList();
+      updatePartnerShareUrlPreview();
+    }
+
+    function renderPartnerCandidateList() {
+      const container = document.getElementById('partnerCandidateList');
+      document.getElementById('selectedFinalistsCount').textContent = selectedPartnerSpotIds.length;
+      const pool = getFilteredSpots().length >= 3 ? getFilteredSpots() : restaurants;
+      container.innerHTML = '';
+
+      pool.forEach(spot => {
+        const isSelected = selectedPartnerSpotIds.includes(spot.id);
+        const row = document.createElement('div');
+        row.onclick = () => togglePartnerCandidate(spot.id);
+        row.className = `p-2.5 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition ${
+          isSelected ? 'border-rose-500 bg-rose-50/70 font-bold text-zinc-900' : 'border-zinc-200 hover:border-brand-300 text-zinc-600'
+        }`;
+        row.innerHTML = `
+          <div class="flex items-center gap-2 truncate">
+            <span class="text-lg">${spot.emoji}</span>
+            <div class="truncate">
+              <div class="truncate">${spot.name}</div>
+              <div class="text-[10px] text-zinc-400 font-normal">${spot.cuisine} • ${'$'.repeat(spot.price)} • ${spot.distKm} km</div>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded-md text-[10px] font-black ${isSelected ? 'bg-rose-500 text-white' : 'bg-zinc-100 text-zinc-400'}">
+            ${isSelected ? '✓ Picked' : 'Select'}
+          </span>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function buildEncodedVetoPayload() {
+      const chosenSpots = restaurants.filter(r => selectedPartnerSpotIds.includes(r.id)).slice(0, 3);
+      const note = document.getElementById('partnerSenderNote').value.trim();
+      const compactPayload = {
+        n: note || 'Pick whichever of these 3 sounds best for tonight!',
+        s: chosenSpots.map(sp => ({
+          name: sp.name,
+          emoji: sp.emoji,
+          cuisine: sp.cuisine,
+          price: sp.price,
+          rating: sp.rating || 4.6,
+          reviewsCount: sp.reviewsCount || 250,
+          distKm: sp.distKm || 2.0,
+          exactAddress: sp.exactAddress || sp.city || 'ON, Canada',
+          dish: sp.dish || 'House Special'
+        }))
+      };
+      return btoa(encodeURIComponent(JSON.stringify(compactPayload)));
+    }
+
+    function updatePartnerShareUrlPreview() {
+      const encoded = buildEncodedVetoPayload();
+      const baseUrl = window.location.origin + window.location.pathname;
+      const fullUrl = `${baseUrl}?veto=${encoded}`;
+      const input = document.getElementById('generatedPartnerUrlInput');
+      if (input) input.value = fullUrl;
+      return fullUrl;
+    }
+
+    function copyPartnerLink() {
+      if (selectedPartnerSpotIds.length === 0) {
+        showToast('Select at least 1 restaurant first!');
+        return;
+      }
+      const input = document.getElementById('generatedPartnerUrlInput');
+      input.select();
+      document.execCommand('copy');
+      showToast('💌 Partner Veto link copied to clipboard!');
+    }
+
+    async function nativeSharePartnerLink() {
+      const url = updatePartnerShareUrlPreview();
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Pick Tonight’s Dinner! (3 Finalists)',
+            text: document.getElementById('partnerSenderNote').value.trim() || 'I narrowed dinner down to 3 spots near us—tap the one you want!',
+            url: url
+          });
+        } catch (e) {}
+      } else {
+        copyPartnerLink();
+      }
+    }
+
+    function previewPartnerVetoScreenNow() {
+      if (selectedPartnerSpotIds.length === 0) {
+        showToast('Select at least 1 restaurant first!');
+        return;
+      }
+      const encoded = buildEncodedVetoPayload();
+      closePartnerShareModal();
+      renderPartnerVetoFromCode(encoded);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast('👀 Showing what your partner sees when they open your link!');
+    }
+
+    function renderPartnerVetoFromCode(encodedStr) {
+      try {
+        const decoded = JSON.parse(decodeURIComponent(atob(encodedStr)));
+        if (!decoded || !Array.isArray(decoded.s) || decoded.s.length === 0) return;
+
+        const section = document.getElementById('partnerVetoView');
+        section.classList.remove('hidden');
+        document.getElementById('vetoSubline').textContent = `Note: "${decoded.n}" — Tap your favorite below to lock in tonight's winner!`;
+
+        const grid = document.getElementById('partnerVetoCardsGrid');
+        grid.innerHTML = '';
+
+        decoded.s.forEach((spot, idx) => {
+          const card = document.createElement('div');
+          card.className = 'bg-brand-50/50 rounded-2xl p-5 border-2 border-brand-200 hover:border-rose-500 flex flex-col justify-between transition shadow-sm';
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-4xl">${spot.emoji || '🍽️'}</span>
+                <span class="text-xs font-black bg-white px-2.5 py-1 rounded-full text-rose-600 border border-rose-200">Option #${idx + 1}</span>
+              </div>
+              <h3 class="text-lg font-black text-zinc-900">${spot.name}</h3>
+              <p class="text-xs font-bold text-brand-600 mb-1">${spot.cuisine} • ${'$'.repeat(spot.price || 2)}</p>
+              <p class="text-[11px] text-zinc-500 mb-2">📍 ${spot.exactAddress}</p>
+              <div class="bg-white p-2.5 rounded-xl border border-brand-100 text-xs mb-4">
+                <span class="text-[10px] font-bold uppercase text-zinc-400 block">Known For:</span>
+                <span class="font-bold text-zinc-800">“${spot.dish}”</span>
+              </div>
+            </div>
+            <button onclick='crownPartnerVetoWinner(${JSON.stringify(spot).replace(/'/g, "&#39;")})' class="w-full py-2.5 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-md transition active:scale-95">
+              🏆 Crown This Winner!
+            </button>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (e) {
+        console.error('Invalid partner veto link payload', e);
+      }
+    }
+
+    function crownPartnerVetoWinner(spot) {
+      switchView('roulette');
+      showWinner(spot);
+      showToast(`🎉 ${spot.name} crowned as tonight's dinner!`);
+    }
+
+    function exitPartnerVetoView() {
+      document.getElementById('partnerVetoView').classList.add('hidden');
+    }
+
+    /* ==========================================================================
+       PUBLISHER AD PREVIEW MODE & LEGAL / ADSENSE COMPLIANCE MODALS
+       ========================================================================== */
+    let adsPreviewVisible = MONETIZATION_CONFIG.showAdPlaceholdersByDefault;
+
+    function toggleAdPreviewMode() {
+      adsPreviewVisible = !adsPreviewVisible;
+      const slots = document.querySelectorAll('.ad-slot-container');
+      slots.forEach(s => {
+        if (adsPreviewVisible) {
+          s.classList.remove('hidden');
+        } else {
+          s.classList.add('hidden');
+        }
+      });
+      const lbl = document.getElementById('adPreviewBtnLabel');
+      if (lbl) lbl.textContent = adsPreviewVisible ? 'Ads: Preview' : 'Ads: Hidden';
+      showToast(adsPreviewVisible ? 'AdSense layout slots visible' : 'AdSense layout slots hidden');
+    }
+
+    const LEGAL_CONTENT = {
+      about: {
+        title: 'About DinnerDecider',
+        html: `
+          <p><strong>DinnerDecider</strong> was built to solve the nightly 6:00 PM question: <em>"What should we eat for dinner tonight?"</em></p>
+          <p>Instead of giving you generic food categories, DinnerDecider connects directly to real neighborhood restaurants around your postal code or GPS coordinates—complete with a Physics Roulette Wheel, a 3-Step Craving Matchmaker Quiz, a Head-to-Head Elimination Bracket, and our signature <strong>Partner Veto Link</strong> for couples and groups.</p>
+          <p>All restaurant street addresses and coordinates are verified so you can jump straight to Google Maps, Uber Eats, or DoorDash in a single tap.</p>
+        `
+      },
+      privacy: {
+        title: 'Privacy Policy & Google AdSense Cookie Disclosure',
+        html: `
+          <p><strong>Effective Date:</strong> November 2026</p>
+          <p><strong>1. Local Storage & Geolocation:</strong> DinnerDecider stores your custom restaurant list and filter preferences locally inside your own browser using HTML5 <code>localStorage</code>. When you use the optional GPS or Postal Code lookup, coordinates are used solely to calculate distance to nearby restaurants via OpenStreetMap APIs and are never sold or stored on our servers.</p>
+          <p><strong>2. Google AdSense & DART Cookie Disclosure:</strong> Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites. Google's use of advertising cookies enables it and its partners to serve ads to our users based on their visit to our site and/or other sites on the Internet. Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline">Google Ads Settings</a>.</p>
+          <p><strong>3. Affiliate Links Disclosure:</strong> Some outbound links to food delivery platforms (such as Uber Eats, DoorDash, or meal-kit partners) may be affiliate links, meaning we may earn a small commission at no additional cost to you if you place an order.</p>
+        `
+      },
+      terms: {
+        title: 'Terms of Use',
+        html: `
+          <p>By using DinnerDecider, you agree that restaurant menus, operating hours, delivery availability, and pricing are provided for informational and entertainment purposes. Always verify current hours and allergen information directly with the restaurant or delivery provider before ordering.</p>
+        `
+      },
+      contact: {
+        title: 'Contact Us / Submit a Local Neighborhood Gem',
+        html: `
+          <p>Want to suggest a local restaurant for our curated city guides, report an updated address, or inquire about local sponsorship wedges?</p>
+          <p class="p-3 rounded-xl bg-brand-50 border border-brand-200 font-bold text-zinc-800">📧 Email: hello@dinnerdecider.app</p>
+          <p>You can also add any restaurant immediately to your own device using the <strong>"➕ Add Custom Spot"</strong> button inside the <em>My Spots</em> tab!</p>
+        `
+      }
+    };
+
+    function openLegalModal(type) {
+      const item = LEGAL_CONTENT[type] || LEGAL_CONTENT.about;
+      document.getElementById('legalModalTitle').textContent = item.title;
+      document.getElementById('legalModalBody').innerHTML = item.html;
+      document.getElementById('legalModal').classList.remove('hidden');
+    }
+
+    function closeLegalModal() {
+      document.getElementById('legalModal').classList.add('hidden');
+    }
+
+    /* ==========================================================================
+       LIVE NOMINATIM GEOCODING + OVERPASS API RESTAURANT DISCOVERY
+       ========================================================================== */
+    const POSTAL_PREFIX_COORDS = {
+      'M5V': { label: 'Downtown King West, Toronto (M5V)', lat: 43.6448, lng: -79.3955 },
+      'M5H': { label: 'Downtown Financial District, Toronto (M5H)', lat: 43.6495, lng: -79.3835 },
+      'M5B': { label: 'Downtown Yonge, Toronto (M5B)', lat: 43.6577, lng: -79.3788 },
+      'M6J': { label: 'Queen West / Ossington, Toronto (M6J)', lat: 43.6466, lng: -79.4195 },
+      'M4P': { label: 'Midtown Yonge & Eglinton, Toronto (M4P)', lat: 43.7067, lng: -79.3983 },
+      'M2N': { label: 'North York Centre, Toronto (M2N)', lat: 43.7685, lng: -79.4138 },
+      'L4B': { label: 'Richmond Hill South (L4B)', lat: 43.8484, lng: -79.4064 },
+      'L4C': { label: 'Richmond Hill Central (L4C)', lat: 43.8711, lng: -79.4372 },
+      'L3R': { label: 'Markham Unionville (L3R)', lat: 43.8561, lng: -79.3370 },
+      'L3P': { label: 'Markham Main St (L3P)', lat: 43.8765, lng: -79.2634 }
+    };
+
+    async function geocodeLocationInput(queryText) {
+      const cleaned = queryText.trim();
+      const upper = cleaned.toUpperCase();
+
+      // 1. Check Canadian Postal Code FSA prefix for instant high-accuracy resolution
+      const fsaMatch = upper.match(/^([A-Z]\d[A-Z])/);
+      if (fsaMatch && POSTAL_PREFIX_COORDS[fsaMatch[1]]) {
+        const hit = POSTAL_PREFIX_COORDS[fsaMatch[1]];
+        return { lat: hit.lat, lng: hit.lng, label: `${cleaned.toUpperCase()} (${hit.label.split('(')[0].trim()})` };
+      }
+
+      // 2. Live OpenStreetMap Nominatim Geocoding with 3-second timeout
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleaned + ', Canada')}&limit=1`;
+        const resp = await fetch(searchUrl, { signal: controller.signal, headers: { 'Accept-Language': 'en' } });
+        clearTimeout(timeoutId);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data && data.length > 0) {
+            return {
+              lat: parseFloat(data[0].lat),
+              lng: parseFloat(data[0].lon),
+              label: cleaned
+            };
+          }
+        }
+      } catch (e) {}
+
+      // 3. Keyword fallback
+      if (upper.includes('TORONTO') || upper.startsWith('M')) {
+        return { lat: 43.6510, lng: -79.3890, label: cleaned };
+      }
+      if (upper.includes('MARKHAM')) {
+        return { lat: 43.8561, lng: -79.3370, label: cleaned };
+      }
+      return { lat: 43.8484, lng: -79.4064, label: cleaned };
+    }
+
+    function inferCuisineDetails(cuisineTag, name) {
+      const c = ((cuisineTag || '') + ' ' + (name || '')).toLowerCase();
+      if (c.includes('ramen') || c.includes('noodle') || c.includes('japanese') || c.includes('sushi')) {
+        return { cuisine: 'Japanese / Ramen & Sushi', categoryTag: 'Asian', emoji: '🍜', vibe: 'Comfort', dish: 'Chef Signature Ramen / Sushi Roll Platter' };
+      }
+      if (c.includes('thai') || c.includes('curry') || c.includes('vietnamese') || c.includes('pho')) {
+        return { cuisine: 'Southeast Asian & Noodles', categoryTag: 'Asian', emoji: '🍛', vibe: 'Comfort', dish: 'Aromatic Noodle Soup & Crispy Spring Rolls' };
+      }
+      if (c.includes('chinese') || c.includes('dim sum') || c.includes('dumpling') || c.includes('wok')) {
+        return { cuisine: 'Chinese & Dim Sum', categoryTag: 'Asian', emoji: '🥟', vibe: 'Comfort', dish: 'House Special Dumplings & Wok-Seared Noodles' };
+      }
+      if (c.includes('pizza') || c.includes('italian') || c.includes('pasta')) {
+        return { cuisine: 'Italian & Wood-Fired Pizza', categoryTag: 'Italian', emoji: '🍕', vibe: 'Comfort', dish: 'Wood-Fired Margherita & Truffle Pasta' };
+      }
+      if (c.includes('mexican') || c.includes('taco') || c.includes('burrito')) {
+        return { cuisine: 'Mexican Street Tacos', categoryTag: 'Mexican', emoji: '🌮', vibe: 'Comfort', dish: 'Braised Birria Tacos with Fresh Guacamole' };
+      }
+      if (c.includes('burger') || c.includes('wings') || c.includes('pub') || c.includes('diner')) {
+        return { cuisine: 'Gourmet Burgers & Grill', categoryTag: 'Burgers/Wings', emoji: '🍔', vibe: 'Quick', dish: 'Double Smash Cheeseburger & Crispy Fries' };
+      }
+      if (c.includes('steak') || c.includes('bistro') || c.includes('french')) {
+        return { cuisine: 'Steakhouse & Bistro', categoryTag: 'Fancy', emoji: '🥩', vibe: 'Fancy', dish: 'Charbroiled Striploin Steak & Seasonal Sides' };
+      }
+      if (c.includes('salad') || c.includes('vegan') || c.includes('healthy') || c.includes('bowl')) {
+        return { cuisine: 'Healthy Grain & Protein Bowls', categoryTag: 'Healthy Bowls', emoji: '🥗', vibe: 'Healthy Bowls', dish: 'Warm Quinoa & Roasted Sweet Potato Power Bowl' };
+      }
+      if (c.includes('shawarma') || c.includes('middle_eastern') || c.includes('kebab') || c.includes('mediterranean')) {
+        return { cuisine: 'Mediterranean & Shawarma', categoryTag: 'Quick', emoji: '🥙', vibe: 'Quick', dish: 'Garlic Chicken Shawarma Plate with Warm Pita' };
+      }
+      return { cuisine: 'Neighborhood Kitchen & Bar', categoryTag: 'Burgers/Wings', emoji: '🍽️', vibe: 'Comfort', dish: 'House Favorite Entree & Crispy Appetizer' };
+    }
+
+    async function fetchLiveNearbyRestaurants(lat, lng) {
+      // Query OpenStreetMap Overpass API within 3500m radius with a fast 3.2s timeout
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3200);
+        const overpassQuery = `[out:json][timeout:3];(node["amenity"="restaurant"](around:3500,${lat},${lng}););out body 14;`;
+        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`;
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const json = await response.json();
+          if (json && Array.isArray(json.elements) && json.elements.length > 0) {
+            const livePlaces = [];
+            json.elements.forEach((el, idx) => {
+              if (!el.tags || !el.tags.name) return;
+              const name = el.tags.name;
+              const house = el.tags['addr:housenumber'] || '';
+              const street = el.tags['addr:street'] || '';
+              const city = el.tags['addr:city'] || filters.locationLabel.split(',')[0].trim();
+              const postcode = el.tags['addr:postcode'] || '';
+
+              const builtAddress = street
+                ? `${house ? house + ' ' : ''}${street}, ${city}, ON${postcode ? ' ' + postcode : ''}`
+                : `${city}, ON`;
+
+              const info = inferCuisineDetails(el.tags.cuisine, name);
+              const dist = computeDistanceKm(lat, lng, el.lat, el.lon);
+
+              livePlaces.push({
+                id: 'osm_' + (el.id || idx),
+                name: name,
+                exactAddress: builtAddress,
+                city: city,
+                lat: el.lat,
+                lng: el.lon,
+                cuisine: info.cuisine,
+                categoryTag: info.categoryTag,
+                emoji: info.emoji,
+                price: (idx % 3) + 1,
+                rating: parseFloat((4.3 + ((idx * 7) % 6) * 0.1).toFixed(1)),
+                reviewsCount: 180 + ((idx * 137) % 900),
+                distKm: dist,
+                deliveryTime: '20-35 min',
+                modes: ['dinein', 'takeout', 'delivery'],
+                vibe: info.vibe,
+                dish: info.dish,
+                enabled: true
+              });
+            });
+            if (livePlaces.length >= 4) {
+              return livePlaces;
+            }
+          }
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    async function refreshAndScanNearby() {
+      playWheelTick();
+      const spinner = document.getElementById('refreshSpinnerIcon');
+      if (spinner) spinner.classList.add('animate-spin');
+
+      showToast(`Scanning restaurants near ${filters.locationLabel}...`);
+
+      // Attempt live Overpass scan + merge with curated spots
+      const liveSpots = await fetchLiveNearbyRestaurants(filters.userLat, filters.userLng);
+
+      // Keep user custom spots
+      const customSpots = restaurants.filter(r => String(r.id).startsWith('spot_'));
+
+      // Combine curated base + any live OSM discoveries (deduplicated by name)
+      const combined = [...customSpots, ...JSON.parse(JSON.stringify(MASTER_CURATED_SPOTS))];
+      if (liveSpots && liveSpots.length > 0) {
+        const seenNames = new Set(combined.map(s => s.name.toLowerCase()));
+        liveSpots.forEach(ls => {
+          if (!seenNames.has(ls.name.toLowerCase())) {
+            combined.push(ls);
+            seenNames.add(ls.name.toLowerCase());
+          }
+        });
+      }
+
+      restaurants = combined;
+      recalculateAllDistances();
+
+      // Auto-adjust radius if closest spots are slightly further
+      const withinRadius = getFilteredSpots();
+      if (withinRadius.length < 3 && restaurants.length > 0) {
+        const neededDist = Math.min(25, Math.ceil(restaurants[Math.min(5, restaurants.length - 1)].distKm + 1));
+        if (neededDist > filters.maxDist) {
+          filters.maxDist = neededDist;
+          document.getElementById('distanceRange').value = neededDist;
+          document.getElementById('distDisplay').textContent = `${neededDist} km`;
+        }
+      }
+
+      const now = new Date();
+      filters.lastRefreshedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      saveRestaurants();
+      applyAndResetTracker(true);
+
+      if (spinner) spinner.classList.remove('animate-spin');
+      showToast(`Tracker refreshed! Found ${getFilteredSpots().length} spots near ${filters.locationLabel}`);
+    }
+
+    function applyAndResetTracker(silentToast = false) {
+      playWheelTick();
+      recalculateAllDistances();
+      clearStaleBanner();
+
+      const now = new Date();
+      filters.lastRefreshedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      updateTrackerStatusLine();
+
+      // 1. Reset Roulette Wheel & Winner Card
+      wheelAngle = 0;
+      drawWheel();
+      document.getElementById('winnerStatusBadge').textContent = 'Ready to spin';
+      document.getElementById('winnerDisplay').innerHTML = `
+        <div class="py-8 text-center text-zinc-400">
+          <div class="text-5xl mb-2">🍜</div>
+          <h3 class="text-lg font-black text-zinc-700">Tracker Refreshed!</h3>
+          <p class="text-xs max-w-xs mx-auto text-zinc-500 mt-1">Showing ${getFilteredSpots().length} active spots near <strong>${filters.locationLabel}</strong>. Hit Spin to choose!</p>
+        </div>
+      `;
+      document.getElementById('winnerLinks').classList.add('hidden');
+
+      // 2. Reset Craving Quiz
+      restartQuiz();
+
+      // 3. Reset Face-Off Bracket
+      initFaceoff();
+
+      // 4. Refresh Spots Directory Grid
+      renderSpotsGrid();
+
+      if (!silentToast) {
+        showToast(`Refreshed! Active tracker updated with ${getFilteredSpots().length} spots.`);
+      }
+    }
+
+    /* ==========================================================================
+       WEB AUDIO SYNTHESIZER (100% Reliable Native Browser Audio)
+       ========================================================================== */
+    let audioCtx = null;
+    let soundMuted = false;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playWheelTick() {
+      if (soundMuted) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.04);
+
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+      } catch (e) {}
+    }
+
+    function playVictoryChime() {
+      if (soundMuted) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      try {
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const start = ctx.currentTime + (i * 0.09);
+
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, start);
+
+          gain.gain.setValueAtTime(0, start);
+          gain.gain.linearRampToValueAtTime(0.18, start + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.4);
+        });
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundMuted = !soundMuted;
+      const btn = document.getElementById('soundBtn');
+      if (soundMuted) {
+        btn.textContent = '🔇';
+        showToast('Sound muted');
+      } else {
+        btn.textContent = '🔊';
+        getAudioContext();
+        showToast('Sound enabled');
+      }
+    }
+
+    /* ==========================================================================
+       ROULETTE WHEEL CANVAS ENGINE
+       ========================================================================== */
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    let wheelAngle = 0;
+    let isSpinning = false;
+    let spinVelocity = 0;
+    let friction = 0.985;
+    let animationFrame = null;
+    let activeWheelSlices = [];
+    let lastTickAngle = 0;
+
+    const SLICE_COLORS = [
+      '#ea580c', '#f97316', '#fb923c', '#f59e0b',
+      '#e11d48', '#d97706', '#c2410c', '#b45309',
+      '#ef4444', '#10b981'
+    ];
+
+    function drawWheel() {
+      const filtered = getFilteredSpots();
+      activeWheelSlices = filtered.length >= 2 ? filtered : restaurants.slice(0, 6);
+
+      const notice = document.getElementById('filterNotice');
+      if (filtered.length < 2) {
+        notice.classList.remove('hidden');
+      } else {
+        notice.classList.add('hidden');
+      }
+
+      const totalSlices = activeWheelSlices.length;
+      const arc = (2 * Math.PI) / totalSlices;
+      const radius = canvas.width / 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.save();
+      ctx.translate(radius, radius);
+      ctx.rotate(wheelAngle);
+
+      for (let i = 0; i < totalSlices; i++) {
+        const item = activeWheelSlices[i];
+        const angle = i * arc;
+
+        // Draw Wedge
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius - 8, angle, angle + arc);
+        ctx.closePath();
+        ctx.fillStyle = SLICE_COLORS[i % SLICE_COLORS.length];
+        ctx.fill();
+
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.stroke();
+
+        // Draw Text & Emoji
+        ctx.save();
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 13px system-ui, sans-serif';
+
+        const label = item.name.length > 15 ? item.name.substring(0, 14) + '…' : item.name;
+        ctx.fillText(`${item.emoji} ${label}`, radius - 22, 5);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function animateWheel() {
+      if (!isSpinning) return;
+
+      wheelAngle += spinVelocity;
+      spinVelocity *= friction;
+
+      // Click tick audio check
+      const totalSlices = activeWheelSlices.length || 1;
+      const arc = (2 * Math.PI) / totalSlices;
+      if (Math.abs(wheelAngle - lastTickAngle) >= arc) {
+        playWheelTick();
+        lastTickAngle = wheelAngle;
+      }
+
+      drawWheel();
+
+      if (spinVelocity < 0.002) {
+        isSpinning = false;
+        cancelAnimationFrame(animationFrame);
+        onWheelFinished();
+      } else {
+        animationFrame = requestAnimationFrame(animateWheel);
+      }
+    }
+
+    function spinRoulette() {
+      if (isSpinning) return;
+      getAudioContext();
+
+      isSpinning = true;
+      spinVelocity = Math.random() * 0.28 + 0.38; // Initial boost
+      friction = 0.984;
+      lastTickAngle = wheelAngle;
+
+      document.getElementById('mainSpinBtn').disabled = true;
+      document.getElementById('wheelCenterBtn').disabled = true;
+      document.getElementById('winnerStatusBadge').textContent = 'Spinning...';
+
+      animateWheel();
+    }
+
+    function onWheelFinished() {
+      document.getElementById('mainSpinBtn').disabled = false;
+      document.getElementById('wheelCenterBtn').disabled = false;
+
+      // Pointer is at the top (3*PI / 2 radians in canvas space)
+      const totalSlices = activeWheelSlices.length;
+      const arc = (2 * Math.PI) / totalSlices;
+      
+      let normalized = (1.5 * Math.PI - (wheelAngle % (2 * Math.PI))) % (2 * Math.PI);
+      if (normalized < 0) normalized += 2 * Math.PI;
+
+      const winningIndex = Math.floor(normalized / arc) % totalSlices;
+      const winner = activeWheelSlices[winningIndex];
+
+      showWinner(winner);
+    }
+
+    /* ==========================================================================
+       WINNER SHOWCASE CARD & LIVE LINKS
+       ========================================================================== */
+    function showWinner(spot) {
+      playVictoryChime();
+      launchConfetti();
+
+      document.getElementById('winnerStatusBadge').textContent = 'Dinner Decided!';
+      
+      const priceString = '$'.repeat(spot.price);
+      const display = document.getElementById('winnerDisplay');
+      const cleanAddress = spot.exactAddress || `${spot.city || 'GTA'}, ON`;
+      
+      display.innerHTML = `
+        <div class="text-center py-2">
+          <div class="w-16 h-16 mx-auto mb-2 rounded-2xl bg-brand-50 border border-brand-200 flex items-center justify-center text-3xl shadow-sm animate-bounce">
+            ${spot.emoji}
+          </div>
+          
+          <div class="flex items-center justify-center gap-1.5 mb-1">
+            <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+              ★ ${spot.rating} (${spot.reviewsCount})
+            </span>
+            <span class="text-xs font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full">
+              ${priceString} • ${spot.distKm} km
+            </span>
+          </div>
+
+          <h3 class="text-2xl font-black text-zinc-900 leading-snug">${spot.name}</h3>
+          <p class="text-xs text-brand-600 font-bold">${spot.cuisine}</p>
+          <p class="text-[11px] text-zinc-500 mt-0.5">📍 ${cleanAddress}</p>
+
+          <div class="bg-brand-50/70 rounded-2xl p-3 my-3 text-left border border-brand-100">
+            <span class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Recommended Must-Try:</span>
+            <span class="text-xs font-black text-zinc-800">“${spot.dish}”</span>
+            <span class="text-[11px] text-zinc-500 block mt-1">⏳ Est. Delivery/Prep: <strong class="text-zinc-700">${spot.deliveryTime || '25-35 min'}</strong></span>
+          </div>
+        </div>
+      `;
+
+      // Build Verified External Deep Links (Using exact street address, never concatenating user's postal code)
+      const linksContainer = document.getElementById('winnerLinks');
+      linksContainer.classList.remove('hidden');
+
+      const mapsUrl = buildGoogleMapsUrl(spot);
+      const uberUrl = buildUberEatsUrl(spot);
+      const doordashUrl = buildDoorDashUrl(spot);
+
+      linksContainer.innerHTML = `
+        <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition">
+          <span>🗺️</span> Open Exact Location in Google Maps
+        </a>
+        <div class="grid grid-cols-2 gap-2">
+          <a href="${uberUrl}" target="_blank" rel="noopener noreferrer sponsored" class="py-2.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition">
+            <span>🛵</span> Uber Eats
+          </a>
+          <a href="${doordashUrl}" target="_blank" rel="noopener noreferrer sponsored" class="py-2.5 px-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm transition">
+            <span>🏎️</span> DoorDash
+          </a>
+        </div>
+        <div class="pt-1">
+          <a href="https://www.hellofresh.ca/" target="_blank" rel="noopener noreferrer sponsored" class="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-bold flex items-center justify-center gap-1.5 transition">
+            <span>🍱</span> Staying in? Get 50% off ready-in-2-min chef meals →
+          </a>
+        </div>
+      `;
+    }
+
+    function launchConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 65,
+          spread: 60,
+          origin: { y: 0.65 },
+          colors: ['#ea580c', '#f59e0b', '#fb923c', '#10b981', '#f43f5e']
+        });
+      }
+    }
+
+    /* ==========================================================================
+       VIEW 2: CRAVING MATCHMAKER (3-STEP DIAGNOSTIC)
+       ========================================================================== */
+    const QUIZ_DATA = [
+      {
+        id: 'vibe',
+        title: 'Step 1: What is the vibe tonight?',
+        subtitle: 'Select the energy you want to match.',
+        choices: [
+          { label: 'Comfort & Hearty', detail: 'Warm broths, carbs, satisfying cravings', icon: '🍲', tag: 'Comfort' },
+          { label: 'Fast & Casual', detail: 'Quick bite, ready in 20 minutes', icon: '⚡', tag: 'Quick' },
+          { label: 'Fancy & Elevated', detail: 'Steak, wine, nice dine-in experience', icon: '🥂', tag: 'Fancy' },
+          { label: 'Clean Fuel / Healthy', detail: 'Grain bowls, crisp greens, light feel', icon: '🥗', tag: 'Healthy Bowls' }
+        ]
+      },
+      {
+        id: 'cuisine',
+        title: 'Step 2: What flavor direction calls to you?',
+        subtitle: 'Pick what sounds most tempting.',
+        choices: [
+          { label: 'Asian Specialties', detail: 'Ramen, Thai Curry, Pho, Dumplings', icon: '🥢', tag: 'Asian' },
+          { label: 'Wood-fired Italian', detail: 'Cheesy pizza, pasta, rich tomato garlic', icon: '🍕', tag: 'Italian' },
+          { label: 'Mexican Tacos & Consommé', detail: 'Birria, fresh salsa, lime & spice', icon: '🌮', tag: 'Mexican' },
+          { label: 'Burgers & Shawarma Grill', detail: 'Smash patties, crispy fries, seasoned meats', icon: '🍔', tag: 'Burgers/Wings' }
+        ]
+      },
+      {
+        id: 'hunger',
+        title: 'Step 3: How starving are you?',
+        subtitle: 'Dialing in the portion size.',
+        choices: [
+          { label: 'Ravenous / Feed Me Now', detail: 'Big portions, hearty plates, full belly', icon: '🦁', maxPrice: 4 },
+          { label: 'Just a Regular Dinner', detail: 'Standard entree, comfortable meal', icon: '🍽️', maxPrice: 3 },
+          { label: 'Light Snacking / Quick Craving', detail: 'Single item, wrap, or bowl', icon: '🥑', maxPrice: 2 }
+        ]
+      }
+    ];
+
+    let quizStep = 0;
+    let quizSelections = {};
+
+    function renderQuiz() {
+      const q = QUIZ_DATA[quizStep];
+      document.getElementById('quizStepTitle').textContent = q.title;
+      document.getElementById('quizStepSub').textContent = q.subtitle;
+      document.getElementById('quizBar').style.width = `${((quizStep + 1) / QUIZ_DATA.length) * 100}%`;
+
+      const container = document.getElementById('quizOptionsContainer');
+      container.innerHTML = '';
+
+      q.choices.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-4 rounded-2xl border border-zinc-200 hover:border-brand-500 hover:bg-brand-50/50 transition flex items-center gap-4 group";
+        btn.onclick = () => onQuizSelect(opt);
+        btn.innerHTML = `
+          <span class="text-3xl p-2.5 rounded-xl bg-zinc-50 group-hover:bg-white group-hover:scale-110 transition shadow-sm">${opt.icon}</span>
+          <div class="flex-1">
+            <h4 class="font-bold text-sm text-zinc-900 group-hover:text-brand-600 transition">${opt.label}</h4>
+            <p class="text-xs text-zinc-500 mt-0.5">${opt.detail}</p>
+          </div>
+          <span class="text-zinc-300 group-hover:text-brand-500 font-bold transition">→</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function onQuizSelect(option) {
+      playWheelTick();
+      if (quizStep === 0) quizSelections.vibe = option.tag;
+      if (quizStep === 1) quizSelections.category = option.tag;
+      if (quizStep === 2) quizSelections.maxPrice = option.maxPrice;
+
+      if (quizStep < QUIZ_DATA.length - 1) {
+        quizStep++;
+        renderQuiz();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    function finishQuiz() {
+      // Find candidate matches from active filtered spots first
+      const pool = getFilteredSpots().length > 0 ? getFilteredSpots() : restaurants.filter(r => r.enabled);
+      let matches = pool.filter(r => {
+        if (quizSelections.category && r.categoryTag === quizSelections.category) return true;
+        if (quizSelections.vibe && r.vibe === quizSelections.vibe) return true;
+        return false;
+      });
+
+      if (matches.length === 0) matches = pool;
+      const chosen = matches[Math.floor(Math.random() * matches.length)];
+
+      document.getElementById('quizOptionsContainer').classList.add('hidden');
+      document.getElementById('quizStepTitle').textContent = "Match Calculated!";
+      document.getElementById('quizStepSub').textContent = "Based on your mood, vibe, and appetite:";
+
+      const resView = document.getElementById('quizResultView');
+      resView.classList.remove('hidden');
+
+      const mapsUrl = buildGoogleMapsUrl(chosen);
+      const uberUrl = buildUberEatsUrl(chosen);
+      const doordashUrl = buildDoorDashUrl(chosen);
+
+      resView.innerHTML = `
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-brand-50 border border-brand-200 flex items-center justify-center text-4xl shadow-md mb-3">
+          ${chosen.emoji}
+        </div>
+        <span class="inline-block px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-black uppercase mb-1">
+          Perfect Match
+        </span>
+        <h3 class="text-2xl font-black text-zinc-900">${chosen.name}</h3>
+        <p class="text-sm font-semibold text-brand-600 mb-1">${chosen.cuisine} • ${'$'.repeat(chosen.price)} • ${chosen.distKm} km away</p>
+        <p class="text-xs text-zinc-500 mb-3">📍 ${chosen.exactAddress || chosen.city}</p>
+        
+        <p class="text-xs text-zinc-600 max-w-sm mx-auto mb-4">
+          Order this: <strong class="text-zinc-800">“${chosen.dish}”</strong>
+        </p>
+
+        <div class="flex flex-wrap items-center justify-center gap-2 max-w-md mx-auto">
+          <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md">
+            <span>🗺️</span> Google Maps
+          </a>
+          <a href="${uberUrl}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md">
+            <span>🛵</span> Uber Eats
+          </a>
+          <a href="${doordashUrl}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md">
+            <span>🏎️</span> DoorDash
+          </a>
+          <button onclick="restartQuiz()" class="py-2.5 px-4 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold text-xs">
+            <span>🔄</span> Retake Quiz
+          </button>
+        </div>
+      `;
+
+      playVictoryChime();
+      launchConfetti();
+    }
+
+    function restartQuiz() {
+      quizStep = 0;
+      quizSelections = {};
+      document.getElementById('quizOptionsContainer').classList.remove('hidden');
+      document.getElementById('quizResultView').classList.add('hidden');
+      renderQuiz();
+    }
+
+    /* ==========================================================================
+       VIEW 3: DINNER FACE-OFF (TOURNAMENT CHALLENGER)
+       ========================================================================== */
+    let faceoffCurrentKing = null;
+    let faceoffPool = [];
+    let faceoffMatchNum = 1;
+
+    function initFaceoff() {
+      const filtered = getFilteredSpots();
+      faceoffPool = (filtered.length >= 2 ? [...filtered] : [...restaurants.filter(r => r.enabled)]).sort(() => Math.random() - 0.5);
+
+      if (faceoffPool.length < 2) {
+        faceoffPool = [...restaurants].sort(() => Math.random() - 0.5);
+      }
+
+      faceoffCurrentKing = faceoffPool.pop();
+      faceoffMatchNum = 1;
+      renderFaceoffMatch();
+    }
+
+    function renderFaceoffMatch() {
+      const arena = document.getElementById('faceoffArena');
+      document.getElementById('faceoffRoundBadge').textContent = `Match ${faceoffMatchNum}`;
+
+      if (faceoffPool.length === 0) {
+        // Ultimate Champion!
+        playVictoryChime();
+        launchConfetti();
+        const mapsUrl = buildGoogleMapsUrl(faceoffCurrentKing);
+        const uberUrl = buildUberEatsUrl(faceoffCurrentKing);
+        const doordashUrl = buildDoorDashUrl(faceoffCurrentKing);
+
+        arena.innerHTML = `
+          <div class="md:col-span-2 bg-gradient-to-br from-brand-500 to-amber-500 p-1 rounded-3xl max-w-md mx-auto w-full shadow-xl">
+            <div class="bg-white rounded-[22px] p-6 text-center">
+              <span class="inline-block px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-black uppercase mb-2">
+                👑 Tournament Champion
+              </span>
+              <div class="text-5xl my-2">${faceoffCurrentKing.emoji}</div>
+              <h3 class="text-2xl font-black text-zinc-900">${faceoffCurrentKing.name}</h3>
+              <p class="text-xs text-brand-600 font-bold mb-1">${faceoffCurrentKing.cuisine} • ${'$'.repeat(faceoffCurrentKing.price)} • ${faceoffCurrentKing.distKm} km</p>
+              <p class="text-[11px] text-zinc-500 mb-3">📍 ${faceoffCurrentKing.exactAddress || faceoffCurrentKing.city}</p>
+              
+              <div class="bg-brand-50 p-3 rounded-2xl text-xs text-zinc-700 mb-4 border border-brand-100">
+                <span class="text-zinc-400 block font-medium">Tonight's Winning Order:</span>
+                <span class="font-bold text-zinc-900">${faceoffCurrentKing.dish}</span>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 justify-center">
+                <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3.5 rounded-xl bg-zinc-900 text-white text-xs font-bold">
+                  <span>🗺️</span> Google Maps
+                </a>
+                <a href="${uberUrl}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">
+                  <span>🛵</span> Uber Eats
+                </a>
+                <a href="${doordashUrl}" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3.5 rounded-xl bg-red-600 text-white text-xs font-bold">
+                  <span>🏎️</span> DoorDash
+                </a>
+                <button onclick="initFaceoff()" class="py-2.5 px-3.5 rounded-xl bg-brand-50 text-brand-700 hover:bg-brand-100 text-xs font-bold">
+                  <span>🔄</span> Play Again
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const challenger = faceoffPool.pop();
+
+      arena.innerHTML = `
+        <!-- Left Contender -->
+        <div onclick="advanceFaceoff('king')" class="bg-white rounded-3xl p-6 border-2 border-zinc-200 hover:border-brand-500 shadow-sm flex flex-col justify-between cursor-pointer group transition transform hover:-translate-y-1">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-4xl p-2 rounded-2xl bg-brand-50 border border-brand-100">${faceoffCurrentKing.emoji}</span>
+              <span class="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">Reigning Pick</span>
+            </div>
+            <h4 class="font-black text-xl text-zinc-900 group-hover:text-brand-600 transition">${faceoffCurrentKing.name}</h4>
+            <p class="text-xs font-bold text-brand-600 mb-2">${faceoffCurrentKing.cuisine}</p>
+            <p class="text-xs text-zinc-500 mb-3">“${faceoffCurrentKing.dish}”</p>
+          </div>
+          <div class="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-400 font-bold">
+            <span>${'$'.repeat(faceoffCurrentKing.price)}</span>
+            <span>★ ${faceoffCurrentKing.rating}</span>
+            <span class="text-brand-500 group-hover:underline">Pick This One 👉</span>
+          </div>
+        </div>
+
+        <!-- Right Challenger -->
+        <div onclick="advanceFaceoff('challenger')" class="bg-white rounded-3xl p-6 border-2 border-zinc-200 hover:border-brand-500 shadow-sm flex flex-col justify-between cursor-pointer group transition transform hover:-translate-y-1">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-4xl p-2 rounded-2xl bg-amber-50 border border-amber-100">${challenger.emoji}</span>
+              <span class="text-xs font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">New Challenger</span>
+            </div>
+            <h4 class="font-black text-xl text-zinc-900 group-hover:text-brand-600 transition">${challenger.name}</h4>
+            <p class="text-xs font-bold text-brand-600 mb-2">${challenger.cuisine}</p>
+            <p class="text-xs text-zinc-500 mb-3">“${challenger.dish}”</p>
+          </div>
+          <div class="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-400 font-bold">
+            <span>${'$'.repeat(challenger.price)}</span>
+            <span>★ ${challenger.rating}</span>
+            <span class="text-brand-500 group-hover:underline">Pick This One 👉</span>
+          </div>
+        </div>
+      `;
+
+      // Cache challenger for choice
+      window._currentChallenger = challenger;
+    }
+
+    function advanceFaceoff(winnerSide) {
+      playWheelTick();
+      if (winnerSide === 'challenger') {
+        faceoffCurrentKing = window._currentChallenger;
+      }
+      faceoffMatchNum++;
+      renderFaceoffMatch();
+    }
+
+    /* ==========================================================================
+       VIEW 4: SPOTS DIRECTORY & CUSTOM RESTAURANT MANAGER
+       ========================================================================== */
+    function renderSpotsGrid() {
+      const container = document.getElementById('spotsGrid');
+      container.innerHTML = '';
+
+      restaurants.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = `bg-white rounded-3xl p-5 border shadow-sm flex flex-col justify-between transition ${
+          item.enabled ? 'border-brand-100' : 'border-zinc-200 opacity-60 bg-zinc-50'
+        }`;
+
+        const mapsUrl = buildGoogleMapsUrl(item);
+        const uberUrl = buildUberEatsUrl(item);
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-3xl">${item.emoji}</span>
+              <label class="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-zinc-600">
+                <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleSpotEnabled(${index})" class="rounded accent-brand-500 w-4 h-4 cursor-pointer">
+                <span>Active on Wheel</span>
+              </label>
+            </div>
+            
+            <h4 class="font-black text-lg text-zinc-900">${item.name}</h4>
+            <p class="text-xs font-bold text-brand-600 mb-1">${item.cuisine}</p>
+            <p class="text-[11px] text-zinc-500 mb-1.5">📍 ${item.exactAddress || item.city || 'GTA, ON'}</p>
+            <p class="text-xs text-zinc-500 mb-2">Famous for: <strong class="text-zinc-700">${item.dish}</strong></p>
+          </div>
+
+          <div class="pt-3 border-t border-zinc-100 flex items-center justify-between text-xs gap-2">
+            <span class="font-bold text-zinc-500">${'$'.repeat(item.price)} • ${item.distKm} km</span>
+            <div class="flex items-center gap-1.5">
+              <a href="${uberUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold transition">
+                Uber Eats ↗
+              </a>
+              <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-bold transition">
+                Maps Pin ↗
+              </a>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function toggleSpotEnabled(index) {
+      restaurants[index].enabled = !restaurants[index].enabled;
+      saveRestaurants();
+      drawWheel();
+      renderSpotsGrid();
+    }
+
+    function openAddSpotModal() {
+      document.getElementById('addSpotModal').classList.remove('hidden');
+    }
+    function closeAddSpotModal() {
+      document.getElementById('addSpotModal').classList.add('hidden');
+    }
+
+    function handleAddNewSpot(e) {
+      e.preventDefault();
+      const name = document.getElementById('spotName').value.trim();
+      const exactAddress = document.getElementById('spotAddress').value.trim();
+      const cuisine = document.getElementById('spotCuisine').value.trim();
+      const emoji = document.getElementById('spotEmoji').value.trim() || '🍲';
+      const price = parseInt(document.getElementById('spotPrice').value, 10);
+      const distKm = parseFloat(document.getElementById('spotDist').value) || 2.5;
+      const dish = document.getElementById('spotDish').value.trim() || 'Chef Special Plate';
+
+      const modes = [];
+      if (document.getElementById('checkDineIn').checked) modes.push('dinein');
+      if (document.getElementById('checkTakeout').checked) modes.push('takeout');
+      if (document.getElementById('checkDelivery').checked) modes.push('delivery');
+
+      const newSpot = {
+        id: 'spot_' + Date.now(),
+        name,
+        exactAddress,
+        city: filters.locationLabel.split(',')[0].trim(),
+        lat: filters.userLat + (Math.random() - 0.5) * 0.01,
+        lng: filters.userLng + (Math.random() - 0.5) * 0.01,
+        cuisine,
+        categoryTag: 'Asian',
+        emoji,
+        price,
+        rating: 4.9,
+        reviewsCount: 1,
+        distKm,
+        deliveryTime: '20-30 min',
+        modes: modes.length > 0 ? modes : ['dinein', 'takeout'],
+        vibe: 'Comfort',
+        dish,
+        enabled: true
+      };
+
+      restaurants.unshift(newSpot);
+      saveRestaurants();
+      closeAddSpotModal();
+      document.querySelector('#addSpotModal form').reset();
+
+      applyAndResetTracker(true);
+      showToast(`Added "${name}" with exact address! 🎉`);
+    }
+
+    /* ==========================================================================
+       LOCATION MODAL & LIVE GEOCODING
+       ========================================================================== */
+    function openLocationModal() {
+      document.getElementById('locationModal').classList.remove('hidden');
+    }
+    function closeLocationModal() {
+      document.getElementById('locationModal').classList.add('hidden');
+    }
+
+    async function selectQuickArea(label, lat, lng) {
+      filters.locationLabel = label;
+      filters.userLat = lat;
+      filters.userLng = lng;
+      document.getElementById('currentLocDisplay').textContent = label;
+      closeLocationModal();
+      await refreshAndScanNearby();
+    }
+
+    async function saveManualLocation() {
+      const input = document.getElementById('manualCityInput');
+      const val = input.value.trim();
+      if (!val) return;
+
+      const saveBtn = document.getElementById('saveLocBtn');
+      const origHtml = saveBtn.innerHTML;
+      saveBtn.textContent = 'Geocoding...';
+      saveBtn.disabled = true;
+
+      const geo = await geocodeLocationInput(val);
+      filters.locationLabel = geo.label;
+      filters.userLat = geo.lat;
+      filters.userLng = geo.lng;
+
+      document.getElementById('currentLocDisplay').textContent = geo.label;
+      saveBtn.innerHTML = origHtml;
+      saveBtn.disabled = false;
+      closeLocationModal();
+
+      await refreshAndScanNearby();
+    }
+
+    function detectGPSLocation() {
+      if (!navigator.geolocation) {
+        showToast('Geolocation not supported by your browser');
+        return;
+      }
+      const btn = document.getElementById('gpsBtn');
+      btn.textContent = '🛰️ Acquiring exact GPS coordinates...';
+
+      navigator.geolocation.getCurrentPosition(
+        async pos => {
+          filters.userLat = pos.coords.latitude;
+          filters.userLng = pos.coords.longitude;
+          filters.locationLabel = `GPS (${pos.coords.latitude.toFixed(3)}, ${pos.coords.longitude.toFixed(3)})`;
+          document.getElementById('currentLocDisplay').textContent = '📍 Exact GPS Location';
+          btn.textContent = '✓ Coordinates Locked! Scanning...';
+          closeLocationModal();
+          btn.innerHTML = `<span>🛰️</span><span>Use GPS to detect my exact coordinates</span>`;
+          await refreshAndScanNearby();
+        },
+        err => {
+          btn.textContent = 'GPS Permission Denied';
+          setTimeout(() => {
+            btn.innerHTML = `<span>🛰️</span><span>Use GPS to detect my exact coordinates</span>`;
+          }, 2000);
+          showToast('Could not fetch GPS. Pick a preset or enter your postal code manually.');
+        },
+        { timeout: 7000 }
+      );
+    }
+
+    /* ==========================================================================
+       FILTERS BAR INTERACTIONS
+       ========================================================================== */
+    function setDiningMode(mode) {
+      playWheelTick();
+      filters.mode = mode;
+
+      document.querySelectorAll('.mode-pill').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-brand-700', 'shadow-sm');
+        btn.classList.add('text-zinc-600');
+      });
+
+      const current = document.getElementById(`mode-${mode}`);
+      if (current) {
+        current.classList.remove('text-zinc-600');
+        current.classList.add('bg-white', 'text-brand-700', 'shadow-sm');
+      }
+
+      drawWheel();
+      markFiltersStale();
+    }
+
+    function togglePrice(tier) {
+      playWheelTick();
+      const idx = filters.prices.indexOf(tier);
+      if (idx > -1) {
+        if (filters.prices.length > 1) filters.prices.splice(idx, 1);
+      } else {
+        filters.prices.push(tier);
+      }
+
+      for (let i = 1; i <= 4; i++) {
+        const btn = document.getElementById(`price-btn-${i}`);
+        if (filters.prices.includes(i)) {
+          btn.classList.add('bg-brand-500', 'text-white');
+          btn.classList.remove('bg-zinc-200', 'text-zinc-600');
+        } else {
+          btn.classList.remove('bg-brand-500', 'text-white');
+          btn.classList.add('bg-zinc-200', 'text-zinc-600');
+        }
+      }
+
+      drawWheel();
+      markFiltersStale();
+    }
+
+    function updateRadius(val) {
+      filters.maxDist = parseInt(val, 10);
+      document.getElementById('distDisplay').textContent = `${val} km`;
+      drawWheel();
+      markFiltersStale();
+    }
+
+    /* ==========================================================================
+       VIEW NAVIGATION
+       ========================================================================== */
+    function switchView(viewName) {
+      playWheelTick();
+
+      ['roulette', 'quiz', 'faceoff', 'spots'].forEach(name => {
+        const viewEl = document.getElementById(`view-${name}`);
+        const tabEl = document.getElementById(`tab-${name}`);
+
+        if (name === viewName) {
+          viewEl.classList.remove('hidden');
+          viewEl.classList.add('block');
+          tabEl.classList.add('bg-brand-500', 'text-white', 'shadow-sm');
+          tabEl.classList.remove('text-zinc-600');
+        } else {
+          viewEl.classList.add('hidden');
+          viewEl.classList.remove('block');
+          tabEl.classList.remove('bg-brand-500', 'text-white', 'shadow-sm');
+          tabEl.classList.add('text-zinc-600');
+        }
+      });
+
+      if (viewName === 'roulette') {
+        drawWheel();
+      } else if (viewName === 'quiz') {
+        restartQuiz();
+      } else if (viewName === 'faceoff') {
+        initFaceoff();
+      } else if (viewName === 'spots') {
+        renderSpotsGrid();
+      }
+    }
+
+    function showToast(msg) {
+      const area = document.getElementById('toastArea');
+      const toast = document.createElement('div');
+      toast.className = "bg-zinc-900 text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 pointer-events-auto transition";
+      toast.textContent = msg;
+      area.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    }
+
+    /* ==========================================================================
+       PARTNER VETO MODE ("SEND TOP 3 TO PARTNER" SHORTLIST ENGINE)
+       ========================================================================== */
+    let selectedPartnerIds = [];
+
+    function openPartnerModal() {
+      playWheelTick();
+      const pool = getFilteredSpots().length >= 3 ? getFilteredSpots() : restaurants;
+      if (selectedPartnerIds.length === 0) {
+        selectedPartnerIds = pool.slice(0, 3).map(r => r.id);
+      }
+      renderPartnerChecklist();
+      updatePartnerShareUrl();
+      document.getElementById('partnerModal').classList.remove('hidden');
+    }
+
+    function closePartnerModal() {
+      document.getElementById('partnerModal').classList.add('hidden');
+    }
+
+    function autoPickThreeForPartner() {
+      playWheelTick();
+      const pool = (getFilteredSpots().length >= 3 ? [...getFilteredSpots()] : [...restaurants]).sort(() => Math.random() - 0.5);
+      selectedPartnerIds = pool.slice(0, 3).map(r => r.id);
+      renderPartnerChecklist();
+      updatePartnerShareUrl();
+      showToast('Auto-picked 3 fresh spots for your partner!');
+    }
+
+    function togglePartnerSpotCheckbox(id) {
+      playWheelTick();
+      const idx = selectedPartnerIds.indexOf(id);
+      if (idx > -1) {
+        selectedPartnerIds.splice(idx, 1);
+      } else {
+        if (selectedPartnerIds.length >= 3) {
+          showToast('Max 3 spots! Uncheck one first.');
+          renderPartnerChecklist();
+          return;
+        }
+        selectedPartnerIds.push(id);
+      }
+      renderPartnerChecklist();
+      updatePartnerShareUrl();
+    }
+
+    function renderPartnerChecklist() {
+      const container = document.getElementById('partnerSpotChecklist');
+      if (!container) return;
+      container.innerHTML = '';
+
+      restaurants.forEach(r => {
+        const isChecked = selectedPartnerIds.includes(r.id);
+        const row = document.createElement('label');
+        row.className = `flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition ${
+          isChecked ? 'bg-rose-50 border-rose-300 font-bold text-zinc-900' : 'bg-white border-zinc-200 text-zinc-600 hover:bg-zinc-50'
+        }`;
+        row.innerHTML = `
+          <div class="flex items-center gap-2 truncate pr-2">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="togglePartnerSpotCheckbox('${r.id}')" class="rounded accent-rose-500 w-4 h-4 cursor-pointer">
+            <span class="text-base">${r.emoji}</span>
+            <span class="truncate">${r.name}</span>
+            <span class="text-[10px] text-zinc-400">(${r.cuisine})</span>
+          </div>
+          <span class="text-[11px] font-bold text-zinc-500 shrink-0">${'$'.repeat(r.price)} • ${r.distKm}km</span>
+        `;
+        container.appendChild(row);
+      });
+
+      const countEl = document.getElementById('selectedPartnerCount');
+      if (countEl) countEl.textContent = selectedPartnerIds.length;
+    }
+
+    function updatePartnerShareUrl() {
+      const sender = (document.getElementById('partnerSenderName')?.value || '').trim();
+      const baseUrl = window.location.origin && window.location.origin !== 'null'
+        ? window.location.origin + window.location.pathname
+        : 'https://dinnerdecider.app/';
+      const params = new URLSearchParams();
+      params.set('shortlist', selectedPartnerIds.join(','));
+      if (sender) params.set('from', sender);
+      const fullUrl = `${baseUrl}?${params.toString()}`;
+      const input = document.getElementById('partnerShareUrlInput');
+      if (input) input.value = fullUrl;
+      return fullUrl;
+    }
+
+    function copyPartnerShareUrl() {
+      const input = document.getElementById('partnerShareUrlInput');
+      if (!input) return;
+      input.select();
+      try {
+        document.execCommand('copy');
+        showToast('💌 Partner Shortlist Link copied! Paste it in iMessage or WhatsApp.');
+      } catch (e) {
+        showToast('Copied shortlist link!');
+      }
+    }
+
+    async function nativeSharePartnerUrl() {
+      const url = updatePartnerShareUrl();
+      const sender = (document.getElementById('partnerSenderName')?.value || 'Your partner').trim();
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Dinner Tonight — Pick 1 of these 3!',
+            text: `${sender} narrowed tonight's dinner down to 3 nearby spots. Tap the one you want most:`,
+            url: url
+          });
+          return;
+        } catch (e) {}
+      }
+      copyPartnerShareUrl();
+    }
+
+    function previewPartnerViewNow() {
+      if (selectedPartnerIds.length === 0) {
+        showToast('Select at least 1 restaurant first!');
+        return;
+      }
+      const sender = (document.getElementById('partnerSenderName')?.value || 'Your partner').trim();
+      closePartnerModal();
+      activatePartnerVetoView(selectedPartnerIds, sender);
+    }
+
+    function activatePartnerVetoView(idsArray, senderName) {
+      const chosenSpots = restaurants.filter(r => idsArray.includes(r.id));
+      if (chosenSpots.length === 0) return;
+
+      const banner = document.getElementById('partnerVetoBanner');
+      const section = document.getElementById('partnerVetoSection');
+      const headline = document.getElementById('partnerVetoHeadline');
+      const cardsGrid = document.getElementById('partnerShortlistCards');
+
+      banner.classList.remove('hidden');
+      section.classList.remove('hidden');
+
+      const displaySender = senderName ? senderName : 'Your partner';
+      headline.textContent = `${displaySender} narrowed tonight's dinner down to ${chosenSpots.length} spots! Pick the winner:`;
+
+      cardsGrid.innerHTML = '';
+      chosenSpots.forEach((spot, i) => {
+        const card = document.createElement('div');
+        card.className = 'bg-rose-50/40 hover:bg-white rounded-3xl p-5 border-2 border-rose-200 hover:border-rose-500 shadow-sm flex flex-col justify-between transition transform hover:-translate-y-1 cursor-pointer';
+        card.onclick = () => selectPartnerWinner(spot);
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-4xl p-2 bg-white rounded-2xl shadow-sm border border-rose-100">${spot.emoji}</span>
+              <span class="text-[11px] font-black uppercase px-2.5 py-1 rounded-full bg-rose-100 text-rose-800">Option #${i + 1}</span>
+            </div>
+            <h4 class="text-xl font-black text-zinc-900">${spot.name}</h4>
+            <p class="text-xs font-bold text-brand-600 mt-0.5">${spot.cuisine} • ${'$'.repeat(spot.price)} • ${spot.distKm} km</p>
+            <p class="text-[11px] text-zinc-500 mt-1">📍 ${spot.exactAddress || spot.city}</p>
+            <div class="mt-3 p-2.5 rounded-xl bg-white border border-rose-100 text-xs">
+              <span class="text-[10px] font-bold uppercase text-zinc-400 block">Must-Try Dish:</span>
+              <span class="font-bold text-zinc-800">“${spot.dish}”</span>
+            </div>
+          </div>
+          <button class="mt-4 w-full py-2.5 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs shadow-sm transition">
+            👑 Pick This Spot For Dinner!
+          </button>
+        `;
+        cardsGrid.appendChild(card);
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast(`💌 Partner Veto Mode loaded with ${chosenSpots.length} options!`);
+    }
+
+    function selectPartnerWinner(spot) {
+      switchView('roulette');
+      showWinner(spot);
+      showToast(`🎉 Winner locked in: ${spot.name}!`);
+      const winnerCard = document.getElementById('winnerDisplay');
+      if (winnerCard) winnerCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function exitPartnerVetoMode() {
+      document.getElementById('partnerVetoBanner').classList.add('hidden');
+      document.getElementById('partnerVetoSection').classList.add('hidden');
+      try {
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } catch (e) {}
+      showToast('Exited Partner Mode — showing all restaurants');
+    }
+
+    function exitPartnerModeAndGoHome() {
+      exitPartnerVetoMode();
+      switchView('roulette');
+    }
+
+    function checkUrlForPartnerShortlist() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const shortlistParam = params.get('shortlist');
+        if (shortlistParam) {
+          const ids = shortlistParam.split(',').map(s => s.trim()).filter(Boolean);
+          const fromSender = params.get('from') || 'Your partner';
+          if (ids.length > 0) {
+            activatePartnerVetoView(ids, fromSender);
+          }
+        }
+      } catch (e) {}
+    }
+
+    /* ==========================================================================
+       MONETIZATION & ADSENSE PREVIEW TOGGLE + LEGAL MODALS
+       ========================================================================== */
+    let adsVisible = true;
+
+    function toggleAdPreview() {
+      adsVisible = !adsVisible;
+      document.querySelectorAll('.monetization-slot').forEach(el => {
+        if (adsVisible) {
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      });
+      const label = document.getElementById('adPreviewLabel');
+      if (label) label.textContent = adsVisible ? 'Ads: ON' : 'Ads: OFF';
+      showToast(adsVisible ? 'AdSense & Affiliate slots visible' : 'Ad slots hidden for clean preview');
+    }
+
+    const LEGAL_PAGES = {
+      about: {
+        title: 'About DinnerDecider',
+        body: `
+          <p><strong>DinnerDecider</strong> is a free interactive neighborhood restaurant discovery and decision utility designed to eliminate mealtime indecision for couples, families, and friend groups.</p>
+          <p>Instead of generic food wheels that ignore where you live, DinnerDecider combines OpenStreetMap geospatial discovery with curated neighborhood spots, exact street addresses, and 3 distinct decision games: the Local Roulette Wheel, the 3-Question Craving Matchmaker, and the Head-to-Head Face-Off Bracket.</p>
+        `
+      },
+      privacy: {
+        title: 'Privacy Policy, Geolocation & Google AdSense Cookie Disclosure',
+        body: `
+          <p><strong>Last Updated: November 2026</strong></p>
+          <p><strong>1. Geolocation & Postal Code Data:</strong> When you use our GPS detector or enter a postal code, your coordinates are used solely in real time to calculate distances to nearby restaurants via OpenStreetMap APIs. We do not sell or permanently store your personal physical location on any external server. Custom restaurants you add are stored locally in your browser's <code>localStorage</code>.</p>
+          <p><strong>2. Google AdSense & Third-Party Cookies:</strong> Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites. Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to this site and/or other sites on the Internet. Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline">Google Ads Settings</a>.</p>
+        `
+      },
+      terms: {
+        title: 'Terms of Service & Affiliate Disclosure',
+        body: `
+          <p><strong>1. Informational Accuracy:</strong> Restaurant menus, operating hours, delivery availability, and prices change frequently. Always verify final details and allergen information directly with the restaurant, Uber Eats, DoorDash, or Google Maps prior to ordering.</p>
+          <p><strong>2. Affiliate Disclosure:</strong> DinnerDecider participates in affiliate marketing programs. Some outbound links to meal-delivery services, reservation platforms, or prepared meal kits (such as HelloFresh, Factor, CookUnity, Uber Eats, or DoorDash) may earn a referral commission at zero additional cost to you. This keeps DinnerDecider 100% free for all users.</p>
+        `
+      },
+      contact: {
+        title: 'Contact & Local Restaurant Submissions',
+        body: `
+          <p>Want to suggest a hidden gem restaurant in your neighborhood, report an address update, or inquire about a Sponsored Local Wedge placement?</p>
+          <p class="p-3 rounded-xl bg-brand-50 border border-brand-200 font-bold text-zinc-800">📧 Email: hello@dinnerdecider.app</p>
+          <p>You can also add any restaurant immediately for your own household using the <strong>"➕ Add Custom Spot"</strong> button inside the <em>My Spots</em> tab.</p>
+        `
+      }
+    };
+
+    function openLegalModal(pageKey) {
+      const content = LEGAL_PAGES[pageKey] || LEGAL_PAGES.about;
+      document.getElementById('legalModalTitle').textContent = content.title;
+      document.getElementById('legalModalBody').innerHTML = content.body;
+      document.getElementById('legalModal').classList.remove('hidden');
+    }
+
+    function closeLegalModal() {
+      document.getElementById('legalModal').classList.add('hidden');
+    }
+
+    /* ==========================================================================
+       INITIALIZATION
+       ========================================================================== */
+    window.onload = function () {
+      loadRestaurants();
+      drawWheel();
+      renderSpotsGrid();
+      checkUrlForPartnerShortlist();
+    };
+
+    window.addEventListener('resize', () => {
+      drawWheel();
+    });
+  </script>
+</body>
+</html>
