@@ -1,7 +1,7 @@
 import { json, num, cached } from '../_lib/http.js';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
-const HEADERS = { 'user-agent': 'DinnerDecider/1.0 (+https://github.com/)', 'accept-language': 'en' };
+const HEADERS = { 'user-agent': 'DinnerDecider/1.0 (+https://dinnerdecider.ca)', 'accept-language': 'en' };
 
 function shortLabel(item) {
   const a = item.address || {};

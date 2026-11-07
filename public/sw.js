@@ -1,4 +1,4 @@
-const CACHE = 'dd-v1';
+const CACHE = 'dd-v2';
 const PRECACHE = ['/', '/css/styles.css', '/js/app.js', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -25,6 +25,25 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+
+  // Restaurant data: answer from cache right away, refresh in the background.
+  if (url.pathname.startsWith('/data/')) {
+    event.respondWith(
+      caches.open(CACHE).then(async (cache) => {
+        const hit = await cache.match(req);
+        const update = fetch(req).then((res) => {
+          if (res && res.ok) cache.put(req, res.clone());
+          return res;
+        });
+        if (hit) {
+          update.catch(() => {});
+          return hit;
+        }
+        return update.catch(() => Response.error());
+      })
+    );
+    return;
+  }
 
   event.respondWith(
     fetch(req)

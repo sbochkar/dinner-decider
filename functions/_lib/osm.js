@@ -1,14 +1,5 @@
-// OpenStreetMap helpers shared by the API routes: query building and
-// normalising raw Overpass elements into the shape the front end consumes.
-
-export const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://z.overpass-api.de/api/interpreter',
-  'https://lz4.overpass-api.de/api/interpreter',
-];
-
-export const MAX_RADIUS_M = 15000;
-export const MAX_RESULTS = 500;
+// OpenStreetMap helpers used by the data build script: normalising raw
+// Overpass elements into the shape the front end consumes.
 
 const CUISINES = {
   pizza: ['Pizza', '🍕'],
@@ -74,30 +65,6 @@ const CUISINES = {
 };
 
 const DEFAULT_EMOJI = { restaurant: '🍽️', fast_food: '🍟', pub: '🍺' };
-
-export function buildAroundQuery(lat, lng, radius) {
-  // Single regex clause is much cheaper on the public Overpass servers than a union.
-  return `[out:json][timeout:25];nwr["amenity"~"^(restaurant|fast_food)$"]["name"](around:${radius},${lat},${lng});out center tags ${MAX_RESULTS};`;
-}
-
-// ids look like n123 / w456 / r789
-export function parseIds(raw) {
-  const ids = String(raw || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => /^[nwr]\d{1,12}$/.test(s));
-  return [...new Set(ids)].slice(0, 12);
-}
-
-export function buildIdsQuery(ids) {
-  const groups = { n: [], w: [], r: [] };
-  for (const id of ids) groups[id[0]].push(id.slice(1));
-  const names = { n: 'node', w: 'way', r: 'relation' };
-  const parts = Object.entries(groups)
-    .filter(([, list]) => list.length)
-    .map(([k, list]) => `${names[k]}(id:${list.join(',')});`);
-  return `[out:json][timeout:20];(${parts.join('')});out center tags;`;
-}
 
 function titleCase(s) {
   return s.replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -197,29 +164,4 @@ export function normalizeElements(elements) {
     out.push(place);
   }
   return out;
-}
-
-async function queryEndpoint(endpoint, query, fetchImpl) {
-  const res = await fetchImpl(endpoint, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/x-www-form-urlencoded',
-      'user-agent': 'DinnerDecider/1.0 (+https://github.com/)',
-    },
-    body: `data=${encodeURIComponent(query)}`,
-    signal: AbortSignal.timeout(50000),
-  });
-  if (!res.ok) throw new Error(`Overpass ${res.status}`);
-  const json = await res.json(); // busy servers return an HTML error page -> throws
-  if (!Array.isArray(json.elements)) throw new Error('Bad Overpass payload');
-  return json.elements;
-}
-
-// Public Overpass servers are often busy: race two mirrors, first good answer wins.
-export async function runOverpass(query, fetchImpl = fetch) {
-  try {
-    return await Promise.any(OVERPASS_ENDPOINTS.slice(0, 2).map((e) => queryEndpoint(e, query, fetchImpl)));
-  } catch {
-    throw new Error('Overpass unavailable');
-  }
 }

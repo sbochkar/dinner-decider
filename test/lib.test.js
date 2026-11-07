@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { isOpenAt } from '../public/js/lib/hours.js';
 import { distanceKm, formatDistance } from '../public/js/lib/geo.js';
 import { applyFilters, DEFAULT_FILTERS, rankByQuiz, QUIZ, cuisineCounts, pickRandom } from '../public/js/lib/places.js';
-import { normalizeElement, normalizeElements, parseIds, buildIdsQuery, parseCuisines } from '../functions/_lib/osm.js';
+import { normalizeElement, normalizeElements, parseCuisines } from '../functions/_lib/osm.js';
 
 // 2025-01-06 is a Monday
 const at = (day, h, m = 0) => new Date(2025, 0, 5 + day, h, m); // day: 0=Sun
@@ -97,9 +97,6 @@ test('normalizeElement handles ways (center), fast food, and junk', () => {
   assert.equal(normalizeElements([{ type: 'node', id: 1, lat: 1, lon: 1, tags: { name: 'A', amenity: 'restaurant' } }, { type: 'node', id: 1, lat: 1, lon: 1, tags: { name: 'A' } }]).length, 1, 'deduped');
 });
 
-test('ids parsing is strict (no query injection)', () => {
-  assert.deepEqual(parseIds('n1,w2,r3,n1'), ['n1', 'w2', 'r3']);
-  assert.deepEqual(parseIds('n1);out;(x,node(1)'), []);
-  assert.equal(buildIdsQuery(['n1', 'n2', 'w3']).includes('node(id:1,2);way(id:3);'), true);
+test('cuisine parsing', () => {
   assert.deepEqual(parseCuisines('Sushi; fish_and_chips').map((c) => c.label), ['Sushi', 'Fish & Chips']);
 });

@@ -206,7 +206,7 @@ function renderEmpty() {
   if (loading) {
     $('#empty .big').textContent = '🍳';
     title.textContent = 'Finding restaurants near you…';
-    text.textContent = 'This can take up to half a minute the first time for a new area.';
+    text.textContent = 'Just a moment…';
     return;
   }
   $('#empty .big').textContent = '🫥';
@@ -649,6 +649,10 @@ function updateShareUrl() {
   if (ids.length) url.searchParams.set('s', ids.join(','));
   const name = $('#shareName').value.trim();
   if (name) url.searchParams.set('from', name);
+  // Carry the sender's area so the partner's browser knows which tiles to load.
+  if (ids.length && state.location) {
+    url.searchParams.set('c', `${state.location.lat.toFixed(3)},${state.location.lng.toFixed(3)}`);
+  }
   $('#shareUrl').value = ids.length ? url.toString() : '';
   $('#shareCopy').disabled = $('#shareNative').disabled = !ids.length;
 }
@@ -669,6 +673,8 @@ async function copyShare() {
 async function initPartner() {
   const params = new URLSearchParams(location.search);
   const ids = (params.get('s') || '').split(',').filter(Boolean).slice(0, 5);
+  const center = (params.get('c') || '').split(',').map((v) => (v.trim() === '' ? NaN : Number(v)));
+  const hasCenter = center.length === 2 && center.every(Number.isFinite);
   const from = (params.get('from') || '').trim().slice(0, 30);
   render();
   $('#partnerEyebrow').textContent = from ? `${from} sent you a shortlist` : 'Someone sent you a shortlist';
@@ -676,7 +682,8 @@ async function initPartner() {
   show($('#partnerRandom'), false);
   list.append(h('p', { class: 'muted', text: 'Loading the shortlist…' }));
   try {
-    const places = withDistances(await fetchPlacesByIds(ids), state.location);
+    if (!hasCenter) throw new Error('This shortlist link is incomplete — ask for a new one.');
+    const places = withDistances(await fetchPlacesByIds(ids, { lat: center[0], lng: center[1] }), state.location);
     if (!places.length) throw new Error('Those spots are no longer available.');
     clear(list).append(
       ...places.map((p) =>

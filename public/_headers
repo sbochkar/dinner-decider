@@ -6,3 +6,6 @@
 
 /sw.js
   Cache-Control: no-cache
+
+/data/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

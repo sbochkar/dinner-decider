@@ -1,9 +1,8 @@
 // Cloudflare Worker entry: static files are served from ./public by the assets
 // binding; only /api/* requests reach this script (see run_worker_first).
-import { onRequestGet as places } from '../functions/api/places.js';
 import { onRequestGet as geocode } from '../functions/api/geocode.js';
 
-const routes = { '/api/places': places, '/api/geocode': geocode };
+const routes = { '/api/geocode': geocode };
 
 export default {
   async fetch(request, env, ctx) {

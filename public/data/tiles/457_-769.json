@@ -1,0 +1,1 @@
+[{"id":"n4745642823","name":"Beachburg Restaurant","kind":"sitdown","lat":45.735184,"lng":-76.863507,"emoji":"🍽️","address":"239 Beachburg Road","modes":["dinein"]},{"id":"n7343390953","name":"Milano Pizzeria","kind":"quick","lat":45.734778,"lng":-76.858206,"cuisines":[{"key":"pizza","label":"Pizza"}],"emoji":"🍕","modes":["dinein","takeaway"]}]
