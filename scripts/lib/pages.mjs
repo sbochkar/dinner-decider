@@ -52,6 +52,7 @@ export function page({ path, title, description, body, head = '', scripts = [], 
   <meta property="og:url" content="${esc(url)}">
   <meta property="og:site_name" content="DinnerDecider">
   <link rel="stylesheet" href="/css/styles.css">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7839352352766254" crossorigin="anonymous"></script>
 ${head}</head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
