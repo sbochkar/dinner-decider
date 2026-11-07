@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>DinnerDecider — Stop debating. Pick a real place to eat tonight.</title>
+  <meta name="description" content="Spin the wheel, take the craving quiz or run a face-off to pick dinner — at a real restaurant near you. Share a shortlist and let your partner choose.">
+  <meta name="theme-color" content="#c2410c">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:title" content="DinnerDecider — pick dinner in seconds">
+  <meta property="og:description" content="Spin, quiz or face-off your way to a real restaurant near you.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="DinnerDecider home">
+      <span class="brand-mark" aria-hidden="true">🍽️</span>
+      <span class="brand-name">Dinner<b>Decider</b></span>
+    </a>
+    <button id="locationBtn" class="pill" type="button" aria-haspopup="dialog" hidden>
+      <span aria-hidden="true">📍</span>
+      <span id="locationLabel">Set location</span>
+    </button>
+  </header>
+
+  <main id="main">
+    <!-- Partner view: opened from a shared shortlist link -->
+    <section id="partnerView" class="card partner" hidden>
+      <p class="eyebrow" id="partnerEyebrow">Shortlist</p>
+      <h1 id="partnerTitle">Pick tonight's winner</h1>
+      <p class="muted">Tap the one you're most in the mood for.</p>
+      <div id="partnerList" class="grid"></div>
+      <div class="row center">
+        <button id="partnerRandom" class="btn secondary" type="button">🎲 Decide for me</button>
+        <a class="btn ghost" href="/">Find my own spots</a>
+      </div>
+    </section>
+
+    <!-- First run: ask for a location -->
+    <section id="onboarding" class="hero" hidden>
+      <p class="eyebrow">No more “I don't know, you pick”</p>
+      <h1>Where should we eat tonight?</h1>
+      <p class="lead">Tell us where you are and we'll turn the real restaurants around you into a game — spin, quiz or face-off — until dinner is decided.</p>
+      <div class="hero-actions">
+        <button id="gpsBtn" class="btn primary large" type="button">📍 Use my location</button>
+        <span class="or">or</span>
+        <form id="heroSearch" class="search" role="search">
+          <label class="sr-only" for="heroQuery">Address, postal code or city</label>
+          <input id="heroQuery" type="search" placeholder="Address, postal code or city" autocomplete="street-address" enterkeyhint="search">
+          <button class="btn secondary" type="submit">Search</button>
+        </form>
+      </div>
+      <ul id="heroResults" class="results" hidden></ul>
+      <p id="heroError" class="error" role="alert" hidden></p>
+      <p class="fine">Your location stays in your browser. We only send map coordinates to look up nearby restaurants.</p>
+    </section>
+
+    <!-- Main app -->
+    <div id="app" hidden>
+      <section class="card filters" aria-label="Filters">
+        <div class="filters-head">
+          <div id="status" class="status" role="status" aria-live="polite">Looking for restaurants…</div>
+          <button id="filtersToggle" class="pill small" type="button" aria-expanded="false" aria-controls="filtersBody">
+            <span aria-hidden="true">⚙️</span> Filters <span id="filtersCount" class="count" hidden></span>
+          </button>
+        </div>
+        <div id="filtersBody" class="filters-body" hidden>
+          <fieldset>
+            <legend>How are we eating?</legend>
+            <div class="chips" data-group="mode">
+              <button type="button" class="chip" data-value="all" aria-pressed="true">Any</button>
+              <button type="button" class="chip" data-value="dinein" aria-pressed="false">Dine in</button>
+              <button type="button" class="chip" data-value="takeaway" aria-pressed="false">Takeaway</button>
+              <button type="button" class="chip" data-value="delivery" aria-pressed="false">Delivery</button>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Type</legend>
+            <div class="chips" data-group="kind">
+              <button type="button" class="chip" data-value="all" aria-pressed="true">Any</button>
+              <button type="button" class="chip" data-value="sitdown" aria-pressed="false">Sit-down</button>
+              <button type="button" class="chip" data-value="quick" aria-pressed="false">Quick bite</button>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Dietary</legend>
+            <div class="chips" data-group="diet">
+              <button type="button" class="chip" data-value="vegetarian" aria-pressed="false">Vegetarian</button>
+              <button type="button" class="chip" data-value="vegan" aria-pressed="false">Vegan</button>
+              <button type="button" class="chip" data-value="halal" aria-pressed="false">Halal</button>
+              <button type="button" class="chip" data-value="kosher" aria-pressed="false">Kosher</button>
+              <button type="button" class="chip" data-value="gluten_free" aria-pressed="false">Gluten-free</button>
+            </div>
+          </fieldset>
+          <div class="row split">
+            <label class="switch">
+              <input id="openNow" type="checkbox">
+              <span>Open now <small class="muted">(hides places known to be closed)</small></span>
+            </label>
+            <label class="range">
+              <span>Within <b id="radiusValue">3 km</b></span>
+              <input id="radius" type="range" min="1" max="15" step="1" value="3">
+            </label>
+          </div>
+          <fieldset id="cuisineFieldset">
+            <legend>Cuisine <button id="clearCuisines" class="link" type="button" hidden>clear</button></legend>
+            <div id="cuisineChips" class="chips scroll" data-group="cuisines"></div>
+          </fieldset>
+          <div class="row">
+            <button id="resetFilters" class="btn ghost small" type="button">Reset filters</button>
+            <button id="resetExcluded" class="btn ghost small" type="button" hidden>Bring back skipped spots</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="empty" class="card empty" hidden>
+        <div class="big" aria-hidden="true">🫥</div>
+        <h2 id="emptyTitle">No spots match</h2>
+        <p id="emptyText" class="muted"></p>
+        <div class="row center"><button id="emptyAction" class="btn secondary" type="button">Loosen filters</button></div>
+      </div>
+
+      <div id="games">
+        <div class="tabs" role="tablist" aria-label="Ways to decide">
+          <button role="tab" id="tab-spin" aria-controls="panel-spin" aria-selected="true" data-tab="spin">🎡 <span>Spin</span></button>
+          <button role="tab" id="tab-quiz" aria-controls="panel-quiz" aria-selected="false" data-tab="quiz" tabindex="-1">🧠 <span>Quiz</span></button>
+          <button role="tab" id="tab-faceoff" aria-controls="panel-faceoff" aria-selected="false" data-tab="faceoff" tabindex="-1">⚔️ <span>Face-off</span></button>
+          <button role="tab" id="tab-list" aria-controls="panel-list" aria-selected="false" data-tab="list" tabindex="-1">📋 <span>All spots</span></button>
+        </div>
+
+        <section role="tabpanel" id="panel-spin" aria-labelledby="tab-spin" class="card panel">
+          <div class="wheel-wrap">
+            <div class="wheel-box">
+              <div class="pointer" aria-hidden="true"></div>
+              <canvas id="wheel" width="400" height="400" role="img" aria-label="Restaurant roulette wheel"></canvas>
+              <button id="wheelCenter" class="wheel-center" type="button" aria-label="Spin the wheel">SPIN</button>
+            </div>
+            <div class="wheel-side">
+              <h2>Let fate pick.</h2>
+              <p class="muted">The wheel holds <b id="wheelCount">0</b> spots from your filters. Not feeling the result? Skip it and spin again.</p>
+              <div class="row">
+                <button id="spinBtn" class="btn primary large" type="button">Spin the wheel</button>
+                <button id="shuffleBtn" class="btn ghost" type="button">Shuffle spots</button>
+              </div>
+              <button id="shareBtn" class="btn secondary" type="button">💌 Send a shortlist to my partner</button>
+            </div>
+          </div>
+        </section>
+
+        <section role="tabpanel" id="panel-quiz" aria-labelledby="tab-quiz" class="card panel" hidden>
+          <div class="quiz">
+            <div class="progress" aria-hidden="true"><div id="quizBar"></div></div>
+            <p id="quizStep" class="eyebrow">Question 1 of 3</p>
+            <h2 id="quizQuestion"></h2>
+            <div id="quizOptions" class="options"></div>
+            <div id="quizResult" hidden></div>
+          </div>
+        </section>
+
+        <section role="tabpanel" id="panel-faceoff" aria-labelledby="tab-faceoff" class="card panel" hidden>
+          <div class="faceoff">
+            <p id="faceoffRound" class="eyebrow">Round 1</p>
+            <h2 id="faceoffTitle">Which one wins tonight?</h2>
+            <div id="faceoffArena" class="versus"></div>
+            <div class="row center"><button id="faceoffRestart" class="btn ghost small" type="button">New bracket</button></div>
+          </div>
+        </section>
+
+        <section role="tabpanel" id="panel-list" aria-labelledby="tab-list" class="card panel" hidden>
+          <div class="list-head">
+            <h2>All spots</h2>
+            <label class="switch compact"><input id="savedOnly" type="checkbox"><span>Saved only</span></label>
+          </div>
+          <div id="spotList" class="spot-list"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Restaurant data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>. Hours and details are community-maintained — double-check before you head out.</p>
+    <p><button class="link" id="privacyBtn" type="button">Privacy</button></p>
+  </footer>
+
+  <!-- Result -->
+  <dialog id="resultDialog" aria-labelledby="resultName">
+    <div class="dialog-body result">
+      <button class="close" type="button" data-close aria-label="Close">×</button>
+      <p class="eyebrow" id="resultEyebrow">Tonight's pick</p>
+      <div class="result-emoji" id="resultEmoji" aria-hidden="true"></div>
+      <h2 id="resultName"></h2>
+      <p id="resultMeta" class="meta"></p>
+      <dl id="resultDetails" class="details"></dl>
+      <div id="resultActions" class="actions"></div>
+      <div id="resultDelivery" class="delivery"></div>
+      <div class="row center">
+        <button id="resultSkip" class="btn ghost" type="button">Not this one — pick again</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Location -->
+  <dialog id="locationDialog" aria-labelledby="locationTitle">
+    <div class="dialog-body">
+      <button class="close" type="button" data-close aria-label="Close">×</button>
+      <h2 id="locationTitle">Where are we eating?</h2>
+      <button id="gpsBtn2" class="btn secondary block" type="button">📍 Use my current location</button>
+      <form id="locSearch" class="search" role="search">
+        <label class="sr-only" for="locQuery">Address, postal code or city</label>
+        <input id="locQuery" type="search" placeholder="Address, postal code or city" enterkeyhint="search">
+        <button class="btn primary" type="submit">Search</button>
+      </form>
+      <ul id="locResults" class="results" hidden></ul>
+      <p id="locError" class="error" role="alert" hidden></p>
+    </div>
+  </dialog>
+
+  <!-- Share -->
+  <dialog id="shareDialog" aria-labelledby="shareTitle">
+    <div class="dialog-body">
+      <button class="close" type="button" data-close aria-label="Close">×</button>
+      <h2 id="shareTitle">Send a shortlist</h2>
+      <p class="muted">Pick up to 5 spots. Your partner gets a link and chooses the winner.</p>
+      <label class="field"><span>Your name <small class="muted">(optional)</small></span>
+        <input id="shareName" type="text" maxlength="30" placeholder="e.g. Alex" autocomplete="given-name">
+      </label>
+      <div id="shareChoices" class="share-choices"></div>
+      <label class="field"><span>Link</span>
+        <input id="shareUrl" type="text" readonly>
+      </label>
+      <div class="row">
+        <button id="shareCopy" class="btn secondary" type="button">Copy link</button>
+        <button id="shareNative" class="btn primary" type="button" hidden>Share…</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Privacy -->
+  <dialog id="privacyDialog" aria-labelledby="privacyTitle">
+    <div class="dialog-body prose">
+      <button class="close" type="button" data-close aria-label="Close">×</button>
+      <h2 id="privacyTitle">Privacy</h2>
+      <p>DinnerDecider has no accounts and no tracking cookies. Your location, filters, saved and skipped spots are stored only in your browser (localStorage).</p>
+      <p>To find restaurants, your browser sends map coordinates (rounded to roughly 100 m) to our server, which asks OpenStreetMap services for nearby places. Address searches are sent the same way. Neither is linked to you or stored by us beyond short-lived caching.</p>
+      <p>Shortlist links contain only restaurant IDs and an optional first name that you type.</p>
+    </div>
+  </dialog>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <noscript><p class="noscript">DinnerDecider needs JavaScript to run.</p></noscript>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

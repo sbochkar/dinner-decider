@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ea6c2e"/>
+      <stop offset="1" stop-color="#9a3412"/>
+    </linearGradient>
+  </defs>
+  <!-- full-bleed square for maskable use; motif scaled into the 80% safe zone -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(256 256) scale(0.72) translate(-256 -256)" fill="#ffffff">
+    <circle cx="256" cy="256" r="110"/>
+    <rect x="80" y="130" width="8" height="60" rx="4"/>
+    <rect x="92" y="130" width="8" height="60" rx="4"/>
+    <rect x="104" y="130" width="8" height="60" rx="4"/>
+    <rect x="80" y="178" width="32" height="32" rx="12"/>
+    <rect x="92" y="200" width="8" height="182" rx="4"/>
+    <path d="M410 130 C 430 140 434 180 422 212 L 410 212 Z"/>
+    <rect x="410" y="200" width="12" height="182" rx="6"/>
+  </g>
+</svg>

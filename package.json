@@ -1,0 +1,15 @@
+{
+  "name": "dinner-decider",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Can't decide where to eat? Spin, quiz or face-off your way to dinner at a real restaurant near you.",
+  "scripts": {
+    "dev": "wrangler pages dev public --compatibility-date=2025-01-01",
+    "test": "node --test test/*.test.js",
+    "deploy": "wrangler pages deploy public --project-name=dinner-decider"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
