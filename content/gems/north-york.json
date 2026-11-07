@@ -1,0 +1,66 @@
+{
+  "slug": "north-york",
+  "city": "North York",
+  "area": "Yonge corridor & Bathurst",
+  "lat": 43.7615,
+  "lng": -79.4111,
+  "radiusKm": 6,
+  "updated": "2026-11",
+  "intro": "North York's stretch of Yonge Street is one long food court of Korean, Japanese and Persian spots, and Bathurst & Wilson is home to Little Manila. Here's where we'd start.",
+  "picks": [
+    {
+      "name": "Daldongnae Korean BBQ",
+      "neighbourhood": "Yonge & Finch",
+      "why": "Grill-at-your-table Korean barbecue with plenty of side dishes. A reliable crowd-pleaser for groups.",
+      "goodFor": [
+        "Groups",
+        "Celebration"
+      ]
+    },
+    {
+      "name": "Kenzo",
+      "neighbourhood": "Yonge & Sheppard",
+      "why": "Long-running North York ramen shop known for rich, hearty bowls — a go-to on a cold evening.",
+      "goodFor": [
+        "Comfort food",
+        "Solo dinner"
+      ]
+    },
+    {
+      "name": "The Fry - Sheppard",
+      "neighbourhood": "Yonge & Sheppard",
+      "why": "Korean fried chicken, double-fried and glazed. Order more than you think you need.",
+      "goodFor": [
+        "Casual",
+        "Groups"
+      ]
+    },
+    {
+      "name": "Pancer's Original Deli",
+      "neighbourhood": "Bathurst & Wilson",
+      "why": "A Jewish deli serving towering smoked meat sandwiches since the 1950s. A true neighbourhood institution.",
+      "goodFor": [
+        "Comfort food",
+        "Lunch for dinner"
+      ]
+    },
+    {
+      "name": "Tinuno",
+      "neighbourhood": "Little Manila",
+      "why": "Filipino kamayan-style feasts served on banana leaves and eaten by hand. Fun for a group.",
+      "goodFor": [
+        "Groups",
+        "Fun night out"
+      ]
+    },
+    {
+      "name": "Kiva's",
+      "neighbourhood": "Bathurst",
+      "why": "Bagels and bakery classics — perfect when dinner should be easy and carb-forward.",
+      "goodFor": [
+        "Cheap eats",
+        "Quick bite"
+      ]
+    }
+  ]
+}

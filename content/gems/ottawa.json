@@ -1,0 +1,84 @@
+{
+  "slug": "ottawa",
+  "city": "Ottawa",
+  "area": "Centretown, ByWard Market & the Glebe",
+  "lat": 45.4215,
+  "lng": -75.6972,
+  "radiusKm": 5,
+  "updated": "2026-11",
+  "intro": "From the ByWard Market to Elgin Street, Ottawa punches above its weight for dinner. These are the spots locals keep recommending.",
+  "picks": [
+    {
+      "name": "Beckta",
+      "neighbourhood": "Centretown",
+      "why": "Ottawa's best-known fine-dining room, in a heritage mansion. Book ahead for celebrations.",
+      "goodFor": [
+        "Special occasion",
+        "Splurge"
+      ]
+    },
+    {
+      "name": "The Whalesbone",
+      "neighbourhood": "Centretown",
+      "why": "Oysters and sustainable seafood in a small, buzzy room.",
+      "goodFor": [
+        "Date night",
+        "Seafood"
+      ]
+    },
+    {
+      "name": "Riviera",
+      "neighbourhood": "Downtown",
+      "why": "Elegant dining room in a grand former bank building, with a polished seasonal menu.",
+      "goodFor": [
+        "Date night",
+        "Special occasion"
+      ]
+    },
+    {
+      "name": "Kochin Kitchen",
+      "neighbourhood": "Ottawa",
+      "why": "South Indian Keralan cooking — coconut curries and appams you don't see everywhere.",
+      "goodFor": [
+        "Spicy food",
+        "Something different"
+      ]
+    },
+    {
+      "name": "El Camino",
+      "neighbourhood": "ByWard Market",
+      "why": "Inventive tacos and cocktails in a lively room. Great for a fun, casual night out.",
+      "goodFor": [
+        "Fun night out",
+        "Groups"
+      ]
+    },
+    {
+      "name": "Ramen Isshin",
+      "neighbourhood": "Ottawa",
+      "why": "Rich bowls of ramen when the Ottawa winter bites.",
+      "goodFor": [
+        "Comfort food",
+        "Solo dinner"
+      ]
+    },
+    {
+      "name": "Fairouz Cafe",
+      "neighbourhood": "Centretown",
+      "why": "Modern Middle Eastern sharing plates in a warm setting.",
+      "goodFor": [
+        "Date night",
+        "Sharing"
+      ]
+    },
+    {
+      "name": "Elgin Street Diner",
+      "neighbourhood": "Elgin Street",
+      "why": "Classic diner open around the clock — the late-night poutine stop.",
+      "goodFor": [
+        "Late night",
+        "Cheap eats"
+      ]
+    }
+  ]
+}

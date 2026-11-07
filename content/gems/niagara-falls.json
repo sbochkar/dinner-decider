@@ -1,0 +1,66 @@
+{
+  "slug": "niagara-falls",
+  "city": "Niagara Falls",
+  "area": "Near the Falls & Clifton Hill",
+  "lat": 43.0896,
+  "lng": -79.0849,
+  "radiusKm": 5,
+  "updated": "2026-11",
+  "intro": "Niagara Falls has plenty of tourist traps — and a handful of meals that are actually worth it. Some of these are about the view as much as the food.",
+  "picks": [
+    {
+      "name": "Skylon Tower Revolving Dining Room",
+      "neighbourhood": "Skylon Tower",
+      "why": "Dinner 236 m above the Falls as the room slowly rotates. Pricey, but an unforgettable view.",
+      "goodFor": [
+        "Special occasion",
+        "Views"
+      ]
+    },
+    {
+      "name": "Table Rock House Restaurant",
+      "neighbourhood": "Table Rock",
+      "why": "Right at the brink of the Horseshoe Falls — the closest dinner table to the water.",
+      "goodFor": [
+        "Views",
+        "Tourists"
+      ]
+    },
+    {
+      "name": "Antica Pizzeria & Ristorante",
+      "neighbourhood": "Victoria Ave",
+      "why": "Wood-fired pizza and Italian classics away from the Clifton Hill crowds.",
+      "goodFor": [
+        "Family dinner",
+        "Casual"
+      ]
+    },
+    {
+      "name": "Napoli Ristorante & Pizza",
+      "neighbourhood": "Niagara Falls",
+      "why": "Long-running family Italian spot that locals have been going to for years.",
+      "goodFor": [
+        "Family dinner",
+        "Comfort food"
+      ]
+    },
+    {
+      "name": "Weinkeller",
+      "neighbourhood": "Niagara Falls",
+      "why": "Wine bar and restaurant pouring local Niagara wines alongside a seasonal menu.",
+      "goodFor": [
+        "Date night",
+        "Wine"
+      ]
+    },
+    {
+      "name": "Koutouki",
+      "neighbourhood": "Niagara Falls",
+      "why": "Family-friendly Greek dinners with generous portions.",
+      "goodFor": [
+        "Family dinner",
+        "Groups"
+      ]
+    }
+  ]
+}

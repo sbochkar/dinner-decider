@@ -1,4 +1,4 @@
-const CACHE = 'dd-v2';
+const CACHE = 'dd-v3';
 const PRECACHE = ['/', '/css/styles.css', '/js/app.js', '/icon.svg'];
 
 self.addEventListener('install', (event) => {

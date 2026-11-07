@@ -4,11 +4,13 @@ import { $, $$, h, clear, toast, openDialog, wireDialogs, confetti, vibrate } fr
 import { Wheel } from './wheel.js';
 import { isOpenAt } from './lib/hours.js';
 import { formatDistance } from './lib/geo.js';
+import { nearestCity } from './lib/gems.js';
 import {
   DEFAULT_FILTERS, QUIZ, applyFilters, cuisineCounts, pickRandom, rankByQuiz, withDistances,
 } from './lib/places.js';
 
 const MAX_RADIUS_KM = 15;
+const GEMS_NEAR_KM = 40;
 const WHEEL_SIZE = 12;
 
 let allPlaces = []; // everything fetched, with distances
@@ -20,6 +22,7 @@ let wheel;
 let activeTab = 'spin';
 let quiz = { step: 0, answers: [] };
 let faceoff = null;
+let gemsIndex = null; // null = not loaded yet, [] = unavailable
 
 const pool = () => applyFilters(allPlaces, state.filters, { excluded: state.excluded });
 const byId = (id) => allPlaces.find((p) => p.id === id);
@@ -51,6 +54,28 @@ function mapsUrl(p) {
 
 function show(el, visible) {
   el.hidden = !visible;
+}
+
+async function loadGemsIndex() {
+  if (gemsIndex) return;
+  try {
+    const res = await fetch('/data/gems-index.json');
+    gemsIndex = res.ok ? await res.json() : [];
+  } catch {
+    gemsIndex = [];
+  }
+  renderGems();
+}
+
+function renderGems() {
+  const card = $('#gemsCard');
+  if (!gemsIndex?.length || !state.location) return show(card, false);
+  const near = nearestCity(gemsIndex, state.location.lat, state.location.lng);
+  const close = near && near.distKm <= GEMS_NEAR_KM;
+  card.href = close ? `/gems/${near.slug}/` : '/gems/';
+  $('#gemsTitle').textContent = close ? `Local gems in ${near.city}` : 'Browse local gems across Ontario';
+  $('#gemsSub').textContent = close ? `${near.count} hand-picked spots →` : 'Hand-picked places to eat →';
+  show(card, true);
 }
 
 /* ------------------------------------------------------------------ */
@@ -170,6 +195,8 @@ function render() {
   show($('#app'), !!state.location);
   if (!state.location) return;
 
+  if (gemsIndex) renderGems();
+  else loadGemsIndex();
   renderFilters();
   renderStatus();
 
@@ -712,7 +739,6 @@ function boot() {
   $('#gpsBtn').addEventListener('click', () => gpsLookup($('#heroError')));
   $('#gpsBtn2').addEventListener('click', () => gpsLookup($('#locError')));
   $('#locationBtn').addEventListener('click', () => openDialog($('#locationDialog')));
-  $('#privacyBtn').addEventListener('click', () => openDialog($('#privacyDialog')));
 
   $('#spinBtn').addEventListener('click', spin);
   $('#wheelCenter').addEventListener('click', spin);

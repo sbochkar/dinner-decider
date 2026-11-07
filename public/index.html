@@ -12,6 +12,7 @@
   <meta property="og:title" content="DinnerDecider — pick dinner in seconds">
   <meta property="og:description" content="Spin, quiz or face-off your way to a real restaurant near you.">
   <meta property="og:type" content="website">
+  <link rel="canonical" href="https://dinnerdecider.ca/">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
@@ -22,6 +23,11 @@
       <span class="brand-mark" aria-hidden="true">🍽️</span>
       <span class="brand-name">Dinner<b>Decider</b></span>
     </a>
+    <nav class="nav" aria-label="Main">
+      <a href="/" aria-current="page">Decide</a>
+      <a href="/gems/">Local gems</a>
+      <a href="/about/">About</a>
+    </nav>
     <button id="locationBtn" class="pill" type="button" aria-haspopup="dialog" hidden>
       <span aria-hidden="true">📍</span>
       <span id="locationLabel">Set location</span>
@@ -179,12 +185,26 @@
           <div id="spotList" class="spot-list"></div>
         </section>
       </div>
+
+      <a id="gemsCard" class="card gems-card" href="/gems/" hidden>
+        <span class="gems-icon" aria-hidden="true">💎</span>
+        <span class="gems-text">
+          <b id="gemsTitle">Local gems</b>
+          <small id="gemsSub" class="muted"></small>
+        </span>
+      </a>
     </div>
   </main>
 
   <footer class="footer">
     <p>Restaurant data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>. Hours and details are community-maintained — double-check before you head out.</p>
-    <p><button class="link" id="privacyBtn" type="button">Privacy</button></p>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="/about/">About</a>
+      <a href="/contact/">Contact</a>
+      <a href="/privacy/">Privacy</a>
+      <a href="/terms/">Terms</a>
+      <a href="/gems/">Local gems</a>
+    </nav>
   </footer>
 
   <!-- Result -->
@@ -237,17 +257,6 @@
         <button id="shareCopy" class="btn secondary" type="button">Copy link</button>
         <button id="shareNative" class="btn primary" type="button" hidden>Share…</button>
       </div>
-    </div>
-  </dialog>
-
-  <!-- Privacy -->
-  <dialog id="privacyDialog" aria-labelledby="privacyTitle">
-    <div class="dialog-body prose">
-      <button class="close" type="button" data-close aria-label="Close">×</button>
-      <h2 id="privacyTitle">Privacy</h2>
-      <p>DinnerDecider has no accounts and no tracking cookies. Your location, filters, saved and skipped spots are stored only in your browser (localStorage).</p>
-      <p>To find restaurants, your browser sends map coordinates (rounded to roughly 100 m) to our server, which asks OpenStreetMap services for nearby places. Address searches are sent the same way. Neither is linked to you or stored by us beyond short-lived caching.</p>
-      <p>Shortlist links contain only restaurant IDs and an optional first name that you type.</p>
     </div>
   </dialog>
 

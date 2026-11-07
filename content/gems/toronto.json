@@ -1,0 +1,103 @@
+{
+  "slug": "toronto",
+  "city": "Toronto",
+  "area": "Downtown & west end",
+  "lat": 43.6532,
+  "lng": -79.3832,
+  "radiusKm": 6,
+  "updated": "2026-11",
+  "intro": "Downtown Toronto has more restaurants than anyone could try in a lifetime, which is exactly why picking one is so hard. These are the long-running favourites we'd send a friend to first — a mix of cheap-and-cheerful classics and a couple of special-occasion splurges.",
+  "picks": [
+    {
+      "name": "Pai Northern Thai Kitchen",
+      "neighbourhood": "Entertainment District",
+      "why": "Lively, always-busy Northern Thai spot that turned a lot of Torontonians on to khao soi. Expect a wait at peak times.",
+      "goodFor": [
+        "Groups",
+        "Spicy food"
+      ],
+      "osmId": "n3093354088"
+    },
+    {
+      "name": "Terroni",
+      "neighbourhood": "Downtown",
+      "why": "The Toronto Italian institution: thin-crust pizzas and simple pastas done the same reliable way for decades.",
+      "goodFor": [
+        "Date night",
+        "Groups"
+      ]
+    },
+    {
+      "name": "Dumpling House",
+      "neighbourhood": "Chinatown",
+      "why": "No-frills Spadina dumpling shop where you can watch them being folded in the window. Cheap, fast and filling.",
+      "goodFor": [
+        "Cheap eats",
+        "Quick bite"
+      ]
+    },
+    {
+      "name": "King's Noodle Restaurant",
+      "neighbourhood": "Chinatown",
+      "why": "Old-school Cantonese noodle and barbecue house — roast pork and duck hanging in the window, wonton noodles on every table.",
+      "goodFor": [
+        "Cheap eats",
+        "Late night"
+      ]
+    },
+    {
+      "name": "Buk Chang Dong Soon Tofu",
+      "neighbourhood": "Koreatown",
+      "why": "Bubbling bowls of soft tofu stew with a spice level you choose. A Bloor Street Koreatown staple for a cold night.",
+      "goodFor": [
+        "Cheap eats",
+        "Comfort food"
+      ]
+    },
+    {
+      "name": "Tacos El Asador",
+      "neighbourhood": "Koreatown",
+      "why": "Tiny, cash-friendly counter famous for its pupusas and tacos. One of the best-value meals downtown.",
+      "goodFor": [
+        "Cheap eats",
+        "Quick bite"
+      ]
+    },
+    {
+      "name": "Okonomi House",
+      "neighbourhood": "Yonge & Bloor",
+      "why": "One of the city's oldest Japanese spots, serving savoury okonomiyaki pancakes since the 1970s.",
+      "goodFor": [
+        "Comfort food",
+        "Solo dinner"
+      ]
+    },
+    {
+      "name": "Patois",
+      "neighbourhood": "Dundas West",
+      "why": "Playful Caribbean-meets-Asian comfort food with a loud, fun room. Great for groups who like to share.",
+      "goodFor": [
+        "Groups",
+        "Fun night out"
+      ]
+    },
+    {
+      "name": "The Sultan's Tent",
+      "neighbourhood": "St. Lawrence",
+      "why": "Moroccan feast in a tented dining room, often with live entertainment — more of an evening than a meal.",
+      "goodFor": [
+        "Celebration",
+        "Date night"
+      ]
+    },
+    {
+      "name": "Sushi Masaki Saito",
+      "neighbourhood": "Yorkville",
+      "why": "Toronto's most celebrated omakase counter. Very expensive and booked far ahead — this is the once-a-year splurge.",
+      "goodFor": [
+        "Splurge",
+        "Special occasion"
+      ]
+    }
+  ]
+}

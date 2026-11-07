@@ -21,12 +21,13 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build:data
+      - run: npm run build:pages
       - name: Commit and push changes
         run: |
-          if [ -n "$(git status --porcelain public/data)" ]; then
+          if [ -n "$(git status --porcelain public/data public/gems public/sitemap.xml)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add public/data
+            git add public/data public/gems public/sitemap.xml
             git commit -m "Refresh restaurant data"
             git push
           else

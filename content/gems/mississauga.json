@@ -1,0 +1,66 @@
+{
+  "slug": "mississauga",
+  "city": "Mississauga",
+  "area": "City Centre, Port Credit & beyond",
+  "lat": 43.589,
+  "lng": -79.6441,
+  "radiusKm": 9,
+  "updated": "2026-11",
+  "intro": "Mississauga's food scene is spread out, but it rewards the drive — especially for South Asian, Afghan and Caribbean cooking. Here are a few spots worth the trip.",
+  "picks": [
+    {
+      "name": "Butt Karahi",
+      "neighbourhood": "Mississauga",
+      "why": "Pakistani karahi cooked to order and served sizzling in the pan. Come hungry and order fresh naan.",
+      "goodFor": [
+        "Groups",
+        "Spicy food"
+      ]
+    },
+    {
+      "name": "Kandahar Kabab",
+      "neighbourhood": "Mississauga",
+      "why": "Afghan kabobs and rice platters with generous portions. Great value for a family dinner.",
+      "goodFor": [
+        "Family dinner",
+        "Cheap eats"
+      ]
+    },
+    {
+      "name": "Udupi Madras Cafe",
+      "neighbourhood": "Mississauga",
+      "why": "South Indian vegetarian classics — crispy dosas, idli and thalis.",
+      "goodFor": [
+        "Vegetarian",
+        "Cheap eats"
+      ]
+    },
+    {
+      "name": "Leela's Roti & Doubles",
+      "neighbourhood": "Mississauga",
+      "why": "Trinidadian roti and doubles, made the way homesick islanders want them.",
+      "goodFor": [
+        "Cheap eats",
+        "Quick bite"
+      ]
+    },
+    {
+      "name": "Happy Lamb Hot Pot",
+      "neighbourhood": "Mississauga",
+      "why": "Mongolian-style hot pot with a fragrant broth — a fun, slow, shareable dinner.",
+      "goodFor": [
+        "Groups",
+        "Comfort food"
+      ]
+    },
+    {
+      "name": "Snug Harbour",
+      "neighbourhood": "Port Credit",
+      "why": "Seafood with a waterfront patio by the Port Credit lighthouse. Best on a warm evening.",
+      "goodFor": [
+        "Date night",
+        "Patio"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "slug": "markham",
+  "city": "Markham",
+  "area": "Unionville, Highway 7 & Pacific Mall area",
+  "lat": 43.8561,
+  "lng": -79.337,
+  "radiusKm": 7,
+  "updated": "2026-11",
+  "intro": "Markham is one of the best places in Canada for Chinese food, from Hong Kong cafés to hand-pulled noodles, plus Unionville's charming Main Street. These are easy wins for a weeknight.",
+  "picks": [
+    {
+      "name": "Phoenix Restaurant",
+      "neighbourhood": "Markham",
+      "why": "Hong Kong-style café with an enormous menu — baked rice, milk tea and everything in between. Great when everyone wants something different.",
+      "goodFor": [
+        "Groups",
+        "Picky eaters"
+      ]
+    },
+    {
+      "name": "Congee Wong 天皇名粥",
+      "neighbourhood": "Markham",
+      "why": "Cantonese comfort food: silky congee, crispy noodles and fried dough for dunking. Fast, filling and affordable.",
+      "goodFor": [
+        "Comfort food",
+        "Cheap eats"
+      ]
+    },
+    {
+      "name": "Magic Noodles",
+      "neighbourhood": "Markham",
+      "why": "Hand-pulled noodles made to order in your choice of thickness. Lanzhou-style beef noodle soup is the move.",
+      "goodFor": [
+        "Cheap eats",
+        "Solo dinner"
+      ]
+    },
+    {
+      "name": "Northern Dumpling Kitchen",
+      "neighbourhood": "Markham",
+      "why": "Northern Chinese dumplings — pan-fried or boiled — plus hearty noodle dishes.",
+      "goodFor": [
+        "Cheap eats",
+        "Comfort food"
+      ]
+    },
+    {
+      "name": "The Owl of Minerva",
+      "neighbourhood": "Markham",
+      "why": "Korean pork-bone soup (gamjatang) served bubbling hot. Open late, which makes it a classic late-night stop.",
+      "goodFor": [
+        "Late night",
+        "Comfort food"
+      ]
+    },
+    {
+      "name": "Gyubee Japanese Grill",
+      "neighbourhood": "Markham",
+      "why": "All-you-can-eat Japanese-style tabletop grilling. Bring an appetite and a group.",
+      "goodFor": [
+        "Groups",
+        "Celebration"
+      ]
+    },
+    {
+      "name": "Jake's on Main",
+      "neighbourhood": "Unionville",
+      "why": "Cozy pub on historic Main Street Unionville. Pair it with an evening stroll.",
+      "goodFor": [
+        "Casual",
+        "Date night"
+      ]
+    }
+  ]
+}

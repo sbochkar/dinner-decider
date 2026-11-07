@@ -8,6 +8,7 @@
     "dev": "wrangler dev",
     "test": "node --test test/*.test.js",
     "build:data": "node scripts/build-places.mjs",
+    "build:pages": "node scripts/build-pages.mjs",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {

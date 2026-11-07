@@ -280,4 +280,64 @@ dialog[open] { animation: pop .22s ease; }
 .delivery-links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .delivery-links .btn { padding: 8px 14px; font-size: .88rem; }
 
+
+/* Nav */
+.nav { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.nav a { text-decoration: none; color: var(--muted); font-weight: 600; font-size: .92rem; padding: 6px 10px; border-radius: 999px; }
+.nav a:hover { color: var(--text); background: var(--surface-2); }
+.nav a[aria-current="page"] { color: var(--brand); }
+.footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; }
+.footer-links a { color: var(--muted); }
+@media (max-width: 520px) { .nav { display: none; } .topbar .pill { margin-left: auto; } }
 @media (max-width: 420px) { .brand-name { display: none; } .pill { max-width: 70vw; } }
+
+/* Home: local gems card */
+.gems-card { display: flex; align-items: center; gap: 14px; margin-top: 16px; text-decoration: none; color: var(--text); }
+.gems-card:hover { border-color: var(--brand-2); }
+.gems-icon { font-size: 1.8rem; }
+.gems-text { display: grid; gap: 2px; }
+
+/* Content pages */
+.page { max-width: 760px; display: grid; gap: 14px; align-content: start; }
+.page h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 800; }
+.page .lead { max-width: none; }
+.prose { display: grid; gap: 12px; }
+.prose h2 { font-size: 1.3rem; margin-top: 12px; }
+.prose p, .prose li { color: var(--text); }
+.prose ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 8px; }
+.crumbs { font-size: .85rem; color: var(--muted); }
+.crumbs a { color: var(--muted); }
+.area { color: var(--muted); font-weight: 600; margin-top: -6px; }
+.disclaimer { margin-top: 8px; }
+
+/* Gems */
+.city-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); margin: 6px 0; }
+.city-card {
+  position: relative; display: grid; gap: 4px; align-content: start; padding: 18px; text-decoration: none; color: var(--text);
+  background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.city-card:hover { border-color: var(--brand-2); }
+.city-card h2 { font-size: 1.3rem; }
+.city-card p { font-size: .9rem; }
+.city-count { color: var(--brand); font-weight: 700; margin-top: 6px; }
+.city-card.nearest { border-color: var(--brand-2); background: var(--brand-soft); }
+.city-flag { justify-self: start; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #fff; background: var(--brand); border-radius: 999px; padding: 1px 9px; }
+.gem-list { display: grid; gap: 14px; margin: 8px 0; }
+.gem {
+  display: grid; grid-template-columns: auto 1fr; gap: 14px; padding: 18px; scroll-margin-top: 90px;
+  background: var(--surface); border: 2px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.gem.chosen { border-color: var(--brand-2); background: var(--brand-soft); }
+.gem-emoji { font-size: 2.2rem; line-height: 1.1; }
+.gem-main { display: grid; gap: 8px; min-width: 0; }
+.gem h3 { font-size: 1.25rem; overflow-wrap: anywhere; }
+.gem-meta { color: var(--muted); font-size: .88rem; }
+.tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.gem-details { font-size: .88rem; }
+.gem-actions { margin: 10px 0; }
+.more-cities { display: grid; gap: 10px; margin-top: 10px; }
+.more-cities h2 { font-size: 1.2rem; }
+.city-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-link { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 13px; font-size: .88rem; font-weight: 600; text-decoration: none; }
+.chip-link:hover { border-color: var(--brand-2); }
+@media (max-width: 420px) { .gem { grid-template-columns: 1fr; } }

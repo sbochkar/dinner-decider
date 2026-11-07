@@ -1,0 +1,48 @@
+{
+  "slug": "oakville",
+  "city": "Oakville",
+  "area": "Downtown Oakville & Kerr Village",
+  "lat": 43.4675,
+  "lng": -79.6877,
+  "radiusKm": 7,
+  "updated": "2026-11",
+  "intro": "Oakville's downtown is walkable and leans upscale-casual. A short list for now — we're still adding to it.",
+  "picks": [
+    {
+      "name": "Piano Piano",
+      "neighbourhood": "Downtown Oakville",
+      "why": "Bright, cheerful Italian with pizzas and pastas designed for sharing.",
+      "goodFor": [
+        "Date night",
+        "Groups"
+      ]
+    },
+    {
+      "name": "Colossus Greek Taverna",
+      "neighbourhood": "Oakville",
+      "why": "Classic Greek taverna fare — souvlaki, saganaki and big salads.",
+      "goodFor": [
+        "Family dinner",
+        "Groups"
+      ]
+    },
+    {
+      "name": "Punjabi By Nature",
+      "neighbourhood": "Oakville",
+      "why": "North Indian curries and tandoori dishes for when you're craving something rich and spicy.",
+      "goodFor": [
+        "Spicy food",
+        "Takeout night"
+      ]
+    },
+    {
+      "name": "Kibo Sushi",
+      "neighbourhood": "Oakville",
+      "why": "Reliable sushi and Japanese plates — an easy choice when nobody can agree.",
+      "goodFor": [
+        "Casual",
+        "Takeout night"
+      ]
+    }
+  ]
+}

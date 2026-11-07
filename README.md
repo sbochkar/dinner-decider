@@ -41,6 +41,16 @@ The build refuses to overwrite existing data if the new count is zero or under h
 
 **Adding a region:** add its ISO 3166-2 code to `REGIONS` in `scripts/build-places.mjs` (for example `'CA-QC'`), add a display name to `REGION_NAMES` in `public/js/api.js`, then rebuild.
 
+## Local gems and static pages
+
+`content/gems/*.json` holds the hand-written Local gems lists (one file per city: `slug`, `city`, `area`, `lat`, `lng`, `radiusKm`, `updated`, `intro` and `picks` with `name`, `neighbourhood`, `why`, `goodFor` and an optional `osmId`). Edit them, then run:
+
+```sh
+npm run build:pages
+```
+
+This resolves each pick to a place in the tile data (by `osmId`, or by name near the city centre; unresolved picks are skipped with a warning, and a city needs at least 3), then writes `public/gems/**`, `public/about|contact|privacy|terms/`, `public/sitemap.xml`, `public/robots.txt` and `public/data/gems-index.json`. The output is deterministic, and the weekly refresh workflow runs it after `build:data`. Static page copy and the shared header/footer live in `scripts/lib/pages.mjs`; page styles are in `public/css/styles.css`. Do not edit the generated HTML by hand.
+
 ## Deployment (Cloudflare Workers + static assets)
 
 Connect the GitHub repo in the Cloudflare dashboard (**Workers & Pages > Create > Import a repository**) and keep the defaults: build command *(none)*, deploy command `npx wrangler deploy`. Every push to `main` redeploys. Or deploy by hand:

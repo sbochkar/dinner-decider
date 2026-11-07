@@ -1,0 +1,75 @@
+{
+  "slug": "waterloo",
+  "city": "Waterloo",
+  "area": "Uptown Waterloo & Kitchener",
+  "lat": 43.4643,
+  "lng": -80.5204,
+  "radiusKm": 6,
+  "updated": "2026-11",
+  "intro": "Waterloo Region mixes student favourites with some genuinely special restaurants in Uptown Waterloo and Downtown Kitchener.",
+  "picks": [
+    {
+      "name": "Bhima's Warung",
+      "neighbourhood": "Kitchener",
+      "why": "Indonesian-inspired fusion that's been a local special-occasion favourite for years.",
+      "goodFor": [
+        "Date night",
+        "Special occasion"
+      ]
+    },
+    {
+      "name": "Kinkaku Izakaya",
+      "neighbourhood": "Uptown Waterloo",
+      "why": "Japanese izakaya with sushi and small plates — good for lingering over a long dinner.",
+      "goodFor": [
+        "Groups",
+        "Date night"
+      ]
+    },
+    {
+      "name": "Lion Brewery Restaurant",
+      "neighbourhood": "Uptown Waterloo",
+      "why": "Pub food in the historic Huether Hotel building, with a brewery history going back to the 1800s.",
+      "goodFor": [
+        "Casual",
+        "Groups"
+      ]
+    },
+    {
+      "name": "Ennio's Pasta House",
+      "neighbourhood": "Uptown Waterloo",
+      "why": "Family-run Italian with homestyle pastas. Comforting and consistent.",
+      "goodFor": [
+        "Comfort food",
+        "Family dinner"
+      ]
+    },
+    {
+      "name": "Lancaster Smokehouse",
+      "neighbourhood": "Kitchener",
+      "why": "Southern-style smoked meats and ribs in a laid-back setting.",
+      "goodFor": [
+        "Groups",
+        "Comfort food"
+      ]
+    },
+    {
+      "name": "Kabob Hut",
+      "neighbourhood": "Waterloo",
+      "why": "Persian kabobs and saffron rice at student-friendly prices.",
+      "goodFor": [
+        "Cheap eats",
+        "Quick bite"
+      ]
+    },
+    {
+      "name": "Mozy's Shawarma",
+      "neighbourhood": "Waterloo",
+      "why": "A student-town shawarma favourite for a cheap, filling dinner.",
+      "goodFor": [
+        "Cheap eats",
+        "Late night"
+      ]
+    }
+  ]
+}
