@@ -2,6 +2,10 @@ name = "dinner-decider"
 main = "src/worker.js"
 compatibility_date = "2025-01-01"
 
+[[analytics_engine_datasets]]
+binding = "EVENTS"
+dataset = "dinnerdecider_events"
+
 [assets]
 directory = "./public"
 # Only API calls run the Worker; static files are served free by the assets layer.

@@ -64,6 +64,21 @@ Then add your domain under **Workers & Pages > dinner-decider > Settings > Domai
 
 The `User-Agent` in `functions/api/geocode.js` must keep a real contact URL or email (Nominatim usage policy).
 
+## Usage stats
+
+Privacy-friendly and anonymous: no cookies, IP addresses or user IDs. Two things are measured:
+
+- **Clicks** (`result_shown`, `delivery_click` with Uber Eats / DoorDash / SkipTheDishes, `directions_click`, `website_click`, `call_click`) are sent to `POST /api/event` and stored as totals in a Workers Analytics Engine dataset (`dinnerdecider_events`, binding `EVENTS` in `wrangler.toml`). Nothing is recorded about the restaurant or the visitor.
+- **Page visits** use Cloudflare Web Analytics. Enable it under **Analytics & Logs > Web Analytics** in the Cloudflare dashboard for the site (automatic setup); the CSP already allows its beacon.
+
+To read the click totals, create an API token with the **Account Analytics: Read** permission and run:
+
+```sh
+CLOUDFLARE_ACCOUNT_ID=... CLOUDFLARE_API_TOKEN=... npm run stats -- --days 30
+```
+
+It prints counts per event and the share of results that led to a delivery click.
+
 ## Data limits
 
 - OpenStreetMap has no ratings, reviews or price levels, so results cannot be filtered or sorted by those.

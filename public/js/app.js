@@ -5,6 +5,7 @@ import { Wheel } from './wheel.js';
 import { isOpenAt } from './lib/hours.js';
 import { formatDistance } from './lib/geo.js';
 import { nearestCity } from './lib/gems.js';
+import { track } from './track.js';
 import {
   DEFAULT_FILTERS, QUIZ, applyFilters, cuisineCounts, pickRandom, rankByQuiz, withDistances,
 } from './lib/places.js';
@@ -365,6 +366,8 @@ function wireFilters() {
 /* ---------- Result dialog ---------- */
 
 function showResult(place, { eyebrow = "Tonight's pick", onSkip = null, celebrate = true } = {}) {
+  const page = new URLSearchParams(location.search).has('s') ? 'partner' : 'home';
+  track('result_shown', '', page);
   $('#resultEyebrow').textContent = eyebrow;
   $('#resultEmoji').textContent = place.emoji;
   $('#resultName').textContent = place.name;
@@ -387,9 +390,10 @@ function showResult(place, { eyebrow = "Tonight's pick", onSkip = null, celebrat
   const link = (cls, text, href, extra = {}) =>
     h('a', { class: `btn ${cls}`, href, target: '_blank', rel: 'noopener noreferrer', text, ...extra });
   const actions = clear($('#resultActions'));
-  actions.append(link('primary', '🧭 Get directions', mapsUrl(place)));
-  if (place.phone) actions.append(h('a', { class: 'btn secondary', href: `tel:${place.phone.replace(/[^+\d]/g, '')}`, text: `📞 Call` }));
-  if (place.website) actions.append(link('secondary', '🌐 Website', place.website));
+  const tracked = (type, target = '') => ({ onclick: () => track(type, target, page) });
+  actions.append(link('primary', '🧭 Get directions', mapsUrl(place), tracked('directions_click')));
+  if (place.phone) actions.append(h('a', { class: 'btn secondary', href: `tel:${place.phone.replace(/[^+\d]/g, '')}`, text: `📞 Call`, ...tracked('call_click') }));
+  if (place.website) actions.append(link('secondary', '🌐 Website', place.website, tracked('website_click')));
   actions.append(
     h('button', {
       class: 'btn ghost', type: 'button', 'aria-pressed': String(state.saved.has(place.id)),
@@ -406,9 +410,9 @@ function showResult(place, { eyebrow = "Tonight's pick", onSkip = null, celebrat
   delivery.append(
     h('p', { class: 'delivery-label', text: place.modes.includes('delivery') ? 'Order delivery' : 'Order delivery (availability not confirmed)' }),
     h('div', { class: 'delivery-links' },
-      link('ghost', 'Uber Eats ↗', `https://www.ubereats.com/search?q=${q}`),
-      link('ghost', 'DoorDash ↗', `https://www.doordash.com/search/store/${q}/`),
-      link('ghost', 'SkipTheDishes ↗', `https://www.skipthedishes.com/search?q=${q}`),
+      link('ghost', 'Uber Eats ↗', `https://www.ubereats.com/search?q=${q}`, tracked('delivery_click', 'ubereats')),
+      link('ghost', 'DoorDash ↗', `https://www.doordash.com/search/store/${q}/`, tracked('delivery_click', 'doordash')),
+      link('ghost', 'SkipTheDishes ↗', `https://www.skipthedishes.com/search?q=${q}`, tracked('delivery_click', 'skip')),
     ),
   );
 

@@ -59,8 +59,8 @@ function pickCard(pick, p) {
             : ''
         }
         <div class="row">
-          <a class="btn secondary small" href="${esc(mapsUrl(p))}" target="_blank" rel="noopener">Directions</a>${
-            site ? `\n          <a class="btn ghost small" href="${esc(site)}" target="_blank" rel="noopener nofollow">Website</a>` : ''
+          <a class="btn secondary small" data-track="directions_click" href="${esc(mapsUrl(p))}" target="_blank" rel="noopener">Directions</a>${
+            site ? `\n          <a class="btn ghost small" data-track="website_click" href="${esc(site)}" target="_blank" rel="noopener nofollow">Website</a>` : ''
           }
         </div>
       </div>

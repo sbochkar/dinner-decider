@@ -1,6 +1,7 @@
 // Progressive enhancements for the Local gems pages. The pages work without this.
 import { nearestCity } from './lib/gems.js';
 import { reduceMotion } from './ui.js';
+import { track } from './track.js';
 
 const KEY = 'dinnerdecider:v1';
 
@@ -45,3 +46,8 @@ function wireRandom() {
 
 highlightNearest();
 wireRandom();
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest?.('[data-track]');
+  if (el) track(el.dataset.track, '', 'gems');
+});
